@@ -23,8 +23,7 @@ class TerraGenesisInt:
         self.dotVals = np.array(self.dotVals).astype(np.int64)
         self.divVals = np.random.randint((minScale), 
                                             (minScale + minScaleJump), 
-                                            size=numVecs
-                                            #, dtype=np.int64
+                                            size=numVecs, dtype=np.int64
                                             )
         self.offsetVals = np.random.randint(0,2**(minScale + minScaleJump),size=numVecs)
         self.heightVals = np.abs(np.random.normal(size=numVecs))

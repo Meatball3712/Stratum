@@ -96,7 +96,7 @@ def testTerraGenesis():
         for y in xrange(1000):
             map[x,y] = T.height((x,y))
     print "Map Generated"
-    R = RenderHeightmap(waterHeight = 0.0)
+    R = RenderHeightmap(waterHeight = 0.6)
     R.output = "terraGenesis.png"
     R.fromNPArray(map)
 
