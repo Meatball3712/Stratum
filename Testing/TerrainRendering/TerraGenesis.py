@@ -21,7 +21,7 @@ class TerraGenesisInt:
             pair = [np.sin(angles[i]),np.cos(angles[i])]
             scale = np.random.normal()*featureScale / np.random.choice(pair)
             self.dotVals.append(np.array(pair)*scale)
-        self.dotVals = np.array(self.dotVals).astype(np.int64)
+        self.dotVals = np.array(self.dotVals).astype(np.float32)
         self.divVals = np.random.randint((minScale), 
                                             (minScale + minScaleJump), 
                                             size=numVecs, dtype=np.int64
@@ -31,7 +31,7 @@ class TerraGenesisInt:
         self.heightVals /= np.sum(self.heightVals)/2./self.noiseScale
         
     def height(self, position):
-        vals = np.abs(np.dot(self.dotVals, position.astype(dtype=np.int64).T)).T + self.offsetVals
+        vals = np.abs(np.dot(self.dotVals, position.T)).T.astype(dtype=np.int64) + self.offsetVals
         height = np.dot(self.heightVals,  (vals >> self.divVals).T % 2 )
         del vals
         return np.tanh(height-self.noiseScale)*0.5 + 0.5
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     img = []
     
     t = TerraGenesisInt()
-    img = t.chunkHeight(0,0,500,500).reshape((500,500))
+    img = t.chunkHeight(0,0,400,400).reshape((400,400))
     R = RenderHeightmap()
     R.output="terraGenesis.png"
     R.fromNPArray(np.array(img))
