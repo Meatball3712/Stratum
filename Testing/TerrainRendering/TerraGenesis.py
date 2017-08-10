@@ -10,7 +10,9 @@ from renderHeightmap import RenderHeightmap
 
 class TerraGenesisInt:
     
-    def __init__(self, numVecs=400, seed=0, featureScale = 256*16, minScale = 12, minScaleJump = 8):
+    noiseScale = 5.
+    
+    def __init__(self, numVecs=400, seed=0, featureScale = 256*8, minScale = 12, minScaleJump = 8):
         np.random.seed(seed)
         #generate sinusoid angles
         angles = np.random.random(size=numVecs) * math.pi
@@ -19,7 +21,6 @@ class TerraGenesisInt:
             pair = [np.sin(angles[i]),np.cos(angles[i])]
             scale = np.random.normal()*featureScale / np.random.choice(pair)
             self.dotVals.append(np.array(pair)*scale)
-        print(self.dotVals)
         self.dotVals = np.array(self.dotVals).astype(np.int64)
         self.divVals = np.random.randint((minScale), 
                                             (minScale + minScaleJump), 
@@ -27,12 +28,17 @@ class TerraGenesisInt:
                                             )
         self.offsetVals = np.random.randint(0,2**(minScale + minScaleJump),size=numVecs)
         self.heightVals = np.abs(np.random.normal(size=numVecs))
-        self.heightVals /= np.sum(self.heightVals)
+        self.heightVals /= np.sum(self.heightVals)/2./self.noiseScale
         
     def height(self, position):
+        print np.array(position).shape
         vals = np.abs(np.dot(self.dotVals, np.array(position,dtype=np.int64).reshape((-1,2)).T).T + self.offsetVals)
         height = np.dot(self.heightVals,  (vals >> self.divVals).T % 2 )
-        return height
+        return np.tanh(height-self.noiseScale)*0.5 + 0.5
+    
+    def chunkHeight(self, x0,y0,x1,y1):
+        x,y = np.meshgrid(np.arange(x0,x1), np.arange(y0,y1), indexing='xy')
+        return self.height(np.vstack([x.ravel(),y.ravel()]).T)
 
 class TerraGenesis:
     
@@ -51,12 +57,9 @@ class TerraGenesis:
 
 if __name__ == '__main__':
     img = []
-
+    
     t = TerraGenesisInt()
-    for i in range(1000):
-        if i%100==0: print("%d%% complete" % (i/1000.0*100))
-        img.append(t.height([[i,j] for j in range(1000)]))
-    print(np.array(img))
+    img = t.chunkHeight(0,0,1000,1000).reshape((1000,1000))
     R = RenderHeightmap()
     R.output="terraGenesis.png"
     R.fromNPArray(np.array(img))
