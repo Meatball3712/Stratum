@@ -61,7 +61,7 @@ if __name__ == '__main__':
     img = []
     
     t = TerraGenesisInt()
-    img = t.chunkHeight(0,0,400,400).reshape((400,400))
+    img = t.chunkHeight(0,0,1000,1000).reshape((1000,1000))
     R = RenderHeightmap()
     R.output="terraGenesis.png"
     R.fromNPArray(np.array(img))

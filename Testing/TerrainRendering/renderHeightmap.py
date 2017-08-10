@@ -38,7 +38,7 @@ class RenderHeightmap:
         return R,G,B
 
     def rainbowArray(self, nparray):
-        print "Creating gradient on Array", (nparray.shape[0], nparray.shape[1], 3)
+        print("Creating gradient on Array", (nparray.shape[0], nparray.shape[1], 3))
         gradient = np.zeros(shape=(nparray.shape[0], nparray.shape[1], 3))
         
         # if value < 0.25
@@ -65,7 +65,7 @@ class RenderHeightmap:
         #if 0.75 < value <= 1
         # Yellow -> Red
         section = (nparray > 0.75)
-        print section
+        print(section)
         gradient[:,:,0] = np.where(section, 255.0, gradient[:,:,0])                                     # R =  255
         gradient[:,:,1] = np.where(section, 255.0-(((nparray-0.75)/0.25)*255.0), gradient[:,:,1])       # G = 255-0
         gradient[:,:,2] = np.where(section, 0.0, gradient[:,:,2])                                       # B = 0
@@ -82,20 +82,20 @@ class RenderHeightmap:
         g = self.rainbowArray(nparray)
         I = Image.fromarray(np.uint8(g))
         I.save(self.output, "PNG")
-        print g
+        print(g)
 
 
 def testTerraGenesis():
-    print "Generating Map from TerraGenesis"
+    print("Generating Map from TerraGenesis")
     from TerraGenesis import TerraGenesisInt
     T = TerraGenesisInt()
     map = np.zeros((1000,1000))
-    for x in xrange(1000):
+    for x in range(1000):
         if ( x % 100 == 0):
-            print "%d%% done" % (x / 1000.0 * 100)
-        for y in xrange(1000):
+            print("%d%% done" % (x / 1000.0 * 100))
+        for y in range(1000):
             map[x,y] = T.height((x,y))
-    print "Map Generated"
+    print("Map Generated")
     R = RenderHeightmap(waterHeight = 0.6)
     R.output = "terraGenesis.png"
     R.fromNPArray(map)
