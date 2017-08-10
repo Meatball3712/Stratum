@@ -12,7 +12,7 @@ class TerraGenesisInt:
     
     noiseScale = 5.
     
-    def __init__(self, numVecs=400, seed=0, featureScale = 256*8, minScale = 12, minScaleJump = 8):
+    def __init__(self, numVecs=300, seed=0, featureScale = 256*8, minScale = 12, minScaleJump = 8):
         np.random.seed(seed)
         #generate sinusoid angles
         angles = np.random.random(size=numVecs) * math.pi
@@ -31,14 +31,16 @@ class TerraGenesisInt:
         self.heightVals /= np.sum(self.heightVals)/2./self.noiseScale
         
     def height(self, position):
-        print np.array(position).shape
-        vals = np.abs(np.dot(self.dotVals, np.array(position,dtype=np.int64).reshape((-1,2)).T).T + self.offsetVals)
+        vals = np.abs(np.dot(self.dotVals, position.astype(dtype=np.int64).T)).T + self.offsetVals
         height = np.dot(self.heightVals,  (vals >> self.divVals).T % 2 )
+        del vals
         return np.tanh(height-self.noiseScale)*0.5 + 0.5
     
     def chunkHeight(self, x0,y0,x1,y1, stepSize = 1.):
-        x,y = np.meshgrid(np.arange(x0,x1,stepSize), np.arange(y0,y1,stepSize), indexing='xy')
-        return self.height(np.vstack([x.ravel(),y.ravel()]).T)
+        x,y = np.meshgrid(np.arange(x0,x1,stepSize,dtype=np.float32), np.arange(y0,y1,stepSize,dtype=np.float32), indexing='xy')
+        positions = np.vstack([x.ravel(),y.ravel()]).T
+        del x,y
+        return self.height(positions)
 
 class TerraGenesis:
     
@@ -59,7 +61,7 @@ if __name__ == '__main__':
     img = []
     
     t = TerraGenesisInt()
-    img = t.chunkHeight(0,0,1000,1000).reshape((1000,1000))
+    img = t.chunkHeight(0,0,500,500).reshape((500,500))
     R = RenderHeightmap()
     R.output="terraGenesis.png"
     R.fromNPArray(np.array(img))
