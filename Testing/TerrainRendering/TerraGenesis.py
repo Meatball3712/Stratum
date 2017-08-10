@@ -36,8 +36,8 @@ class TerraGenesisInt:
         height = np.dot(self.heightVals,  (vals >> self.divVals).T % 2 )
         return np.tanh(height-self.noiseScale)*0.5 + 0.5
     
-    def chunkHeight(self, x0,y0,x1,y1):
-        x,y = np.meshgrid(np.arange(x0,x1), np.arange(y0,y1), indexing='xy')
+    def chunkHeight(self, x0,y0,x1,y1, stepSize = 1.):
+        x,y = np.meshgrid(np.arange(x0,x1,stepSize), np.arange(y0,y1,stepSize), indexing='xy')
         return self.height(np.vstack([x.ravel(),y.ravel()]).T)
 
 class TerraGenesis:
