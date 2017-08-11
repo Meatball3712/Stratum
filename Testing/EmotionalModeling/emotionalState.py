@@ -40,24 +40,42 @@ actionLibrary = {
     "gift" : "dependant",
     "compliment" : "docile",
     "attack" : "hostile",
-    
+    "defend" : ""
 }
 
 class Personality:
-    def __init__(self currentState=(0,0,0)):
+    def __init__(self, name, bio="", currentState=(0,0,0)):
+        self.name = name
+        self.bio = bio
         self.mood = currentState # Default to neutral
+        self.worldView = {} # Dictionary of Valency's on all sorts of topics, people and things.
 
-    def how_do_I_feel_about(self, agent=None, target=None, action=None, consequence=None):
+        # Action Planning - not exactly emotions, but emotions are influenced by the following.
+        self.needs = {} # What does this personally actually need regardless of what they think they need
+        self.wants = [] # What personal wants
+        self.goals = [] # List of personal goals aimed to acheive wants.
+
+
+    def addNeed(self, need, valence):
+        self.needs[need] = valence
+
+    def addWant(self, desire, valence):
+        self.desires[desire] = valence
+
+    def addGoal(self, goal):
+        self.goals.append(goal)
+
+    def how_do_I_feel_about(self, initiator=None, target=None, action=None, consequence=None):
         """ How do I feel about things. People, Actions, Consequences """
         # Return -1 <= x <= 1
         return 1
 
-    def what_I_think_is_going_to_happen(self, action, agent, target):
+    def what_I_think_is_going_to_happen(self, action, initiator, target):
 
         return None
 
-    def experience(self, agent, target, action, expectation, consequence):
-        # agent - a valence on how we feel about the causer
+    def experience(self, initiator, target, action, expectation, consequence):
+        # initiator - a valence on how we feel about the causer
         # target - a valence on how we feel about the target
         # action - a valence on the action maybe - otherwise it is irrelevant except to predict consequence.
         # expectation - how likely we believe the consequence will occur. None if it's happening.
@@ -65,13 +83,13 @@ class Personality:
         
         feelings = {}
         hif_ConsequenceObjectively = self.how_do_I_feel_about(consequence) # Without context, is this a positive consequence
-        hif_ConsequenceSubjectively = self.how_do_I_feel_about(consequence, agent, target) # Within context, do I now feel positive about it?
-        hif_agent = self.how_do_I_feel_about(agent)
-        hif_target = self.how_do_I_feel_about(target)
-        hif_actionObjectively = self.how_do_I_feel_about(action)
-        hif_actionSubjectively = self.how_do_I_feel_about(action, agent, target)
-        AnticipatedConsequence = self.what_I_think_is_going_to_happen(action, agent, target) # What do we expect to happen?
-        hif_AnticipatedConsequence
+        hif_ConsequenceSubjectively = self.how_do_I_feel_about(consequence, initiator, target) # Within context, do I now feel positive about it?
+        hif_initiator = self.how_do_I_feel_about(initiator) # Personal opinion of the initator
+        hif_target = self.how_do_I_feel_about(target) # Personal opinion of the target
+        hif_actionObjectively = self.how_do_I_feel_about(action) # Opinion of an action without a context
+        hif_actionSubjectively = self.how_do_I_feel_about(action, initiator, target) # Opinion of the action in this context
+        AnticipatedConsequence = self.what_I_think_is_going_to_happen(action, initiator, target) # What do we expect to happen?
+        hif_AnticipatedConsequence = self.how_do_I_feel_about(AnticipatedConsequence)
 
         # Is this outcome important to us?
         if hif_ConsequenceSubjectively != 0:
@@ -125,7 +143,7 @@ class Personality:
                 elif hif_actionObjectively < 0: feelings["disapproving"] = abs(hif_actionObjectively)
 
                 # Ego
-                if self == agent and hif_actionObjectively != 0:
+                if self == initiator and hif_actionObjectively != 0:
                     if hif_actionObjectively > 0:
                         feelings["pride"] = abs(hif_actionObjectively)
                     elif hif_actionObjectively < 0:
@@ -173,8 +191,8 @@ resentment is distress about a consequence (of an event) presumed to be desirabl
 gloating is joy about a consequence (of an event) presumed to be undesirable for someone else
 pity is distress about a consequence (of an event) presumed to be undesirable for someone else
 
-approving is being positive about an action (of an agent)
-disapproving is being negative about an action (of an agent)
+approving is being positive about an action (of an initiator)
+disapproving is being negative about an action (of an initiator)
 pride is approving of one’s own action
 shame is disapproving of one’s own action
 admiration is approving of someone else’s action
