@@ -27,7 +27,7 @@ class OCCMap:
         """
         feelings = None
 
-        self.mappings = {
+        self.mappings = [
             "hope",
             "fear",
             "joy",
@@ -49,7 +49,7 @@ class OCCMap:
             "gratification",
             "remorse",
             "gratitude"
-        }
+        ]
 
     def map(self):
         """ Map OCC to PAD """
