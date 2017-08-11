@@ -4,30 +4,38 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
-import EmotionalState
+from character import Character
 
 class Chapter:
     def __init__(self, description):
         self.description = description
         self.events = []
 
-    def addEvent(self, affects, agent, target, action, probability=None, consequence=None, description=""):
-        self.events.append(Event(affects, agent, target, action, probability, consequence, description))
+    def addEvent(self, affects, initiator, target, action, probability=None, expectation=None, description=""):
+        self.events.append(Event(affects, initiator, target, action, probability, expectation, description))
 
 class Event:
-    def __init__(self, affects, agent, target, action, probability=None, consequence=None, description=""):
+    def __init__(self, affects, initiator, target, action, probability=None, expectation=None, description=""):
         self.description = description
         self.affects = affects # The characters's who are experiencing the event. Who this affects.
-        self.agent = agent
+        self.initiator = initiator
         self.target = target
         self.action = action
         self.probability = probability
-        self.consequence = consequence
+        self.expectation = expectation
+
+    def args(self):
+        return {
+            "initiator": self.initiator
+            "target" : self.target
+            "action" : self.action
+            "probability" : self.probability
+            "expectation" : self.expectation
+        }
 
 class Prop:
     def __init__(self, name):
         self.name = name
-        self.type = "Obj"
 
 class Story:
     def __init__(self, **kwargs):
@@ -42,7 +50,7 @@ class Story:
         if self.debug:
             print("Introducing {name}".format(name=name))
             print(bio)
-        character = EmotionalState.Personality(name, bio, currentState)
+        C = Character(name, bio, currentState)
         self.characters[name] = character
         return character
 
@@ -71,3 +79,18 @@ class Story:
         self.chapterCount += 1
 
         return self.chapters[chapterCount]
+
+    def read(self):
+        """ Read a story, executing it's events etc """
+        for chapter in self.chapters:
+            print("\n\n{}\n".format(chapter.description))
+            print("Events:\n")
+            for event in chapter.events:
+                if len(event.description)>0:
+                    print("{}\n".format(event.description))
+                else: 
+                    print("Affecting {.affects}: {.initiator} \"{.action}\"(ed) {.target}".format(event), end="")
+                    if event.probability:
+                        print(" with expected {.probability:.2%} chance of {.expectation} \n".format(event.))
+                    print()
+                event.affects.experience(**event)

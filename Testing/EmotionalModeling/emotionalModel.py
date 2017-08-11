@@ -27,9 +27,33 @@ class OCCMap:
         """
         feelings = None
 
+        self.mappings = {
+            "hope",
+            "fear",
+            "joy",
+            "distress",
+            "satisfaction",
+            "dissapointment",
+            "relief",
+            "fears-confirmed",
+            "happy-for",
+            "resentment",
+            "gloating",
+            "pity",
+            "approving",
+            "disapproving",
+            "pride",
+            "shame",
+            "admiration",
+            "reproach",
+            "gratification",
+            "remorse",
+            "gratitude"
+        }
+
     def map(self):
         """ Map OCC to PAD """
-        pass
+        
 
 # Map of Action keywords to their related extent (this will vary to degrees of course)
 actionLibrary = {
@@ -40,27 +64,26 @@ actionLibrary = {
     "gift" : "dependant",
     "compliment" : "docile",
     "attack" : "hostile",
-    "defend" : ""
+    "defend" : "hostile",
+    "eat" : "exuberant"
 }
 
 class Personality:
-    def __init__(self, name, bio="", currentState=(0,0,0)):
-        self.name = name
-        self.bio = bio
+    def __init__(self, currentState=(0,0,0)):
         self.mood = currentState # Default to neutral
         self.worldView = {} # Dictionary of Valency's on all sorts of topics, people and things.
 
         # Action Planning - not exactly emotions, but emotions are influenced by the following.
         self.needs = {} # What does this personally actually need regardless of what they think they need
-        self.wants = [] # What personal wants
-        self.goals = [] # List of personal goals aimed to acheive wants.
+        self.goals = {} # List of personal goals based on desires, which may or maynot satisfy needs.
+        self.plans = [] # List of plans aimed to satisfy goals.
 
 
     def addNeed(self, need, valence):
         self.needs[need] = valence
 
-    def addWant(self, desire, valence):
-        self.desires[desire] = valence
+    def addGoal(self, desire, valence):
+        self.goals[desire] = valence
 
     def addGoal(self, goal):
         self.goals.append(goal)
@@ -74,12 +97,17 @@ class Personality:
 
         return None
 
-    def experience(self, initiator, target, action, expectation, consequence):
+    def experience(self, **kwargs):
         # initiator - a valence on how we feel about the causer
         # target - a valence on how we feel about the target
         # action - a valence on the action maybe - otherwise it is irrelevant except to predict consequence.
         # expectation - how likely we believe the consequence will occur. None if it's happening.
         # consequence - our percieved valence on an outcome.
+        initiator = kwargs["initiator"], 
+        target = kwargs["target"]
+        action = kwargs["action"]
+        expectation = kwargs.get("expectation", None)
+        consequence = kwargs.get("consequence", None)
         
         feelings = {}
         hif_ConsequenceObjectively = self.how_do_I_feel_about(consequence) # Without context, is this a positive consequence
