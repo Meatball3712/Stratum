@@ -24,11 +24,13 @@ class Intention:
         return self.description
 
     def __repr__(self):
-        return self.agent + " -> " + self.action + " @ " + self.target
+        return "{} -> {} @ {}".format(self.agent, self.action, self.target)
 
 class NPC:
     def __init__(self, name, **kwargs):
         self.name = name
+        self.logger = kwargs.get("logger", None)
+        self.logger = (self.logger if self.logger else getDefaultLogger).getChild(self.name)
 
          # Set goals based on Heirarchy of needs?
         self.sleeping = 0
@@ -63,6 +65,7 @@ class NPC:
             "zzz" : self.zzz,
             "attack" : self.attack,
             "run" : self.run,
+            "eat" : self.eat,
             "travel" : self.travel,
             "talk" : self.talk,
             "hug" : self.hug,
@@ -79,13 +82,15 @@ class NPC:
         return self.name
 
     def getMaslowHierarchy(self):
-        result = {}
-        result["physiology"] = (self.health + self.stamina) / 2
-        result["security"] = self.food/4
-        result["belonging"] = (sum(list(self.friends.values())) + (25 if self.love else 0)) / 100
-        result["esteem"] = sum(list(self.respectedBy.values())) / 100
-        result["self_actualisation"] = self.dances/10
-        return result
+        # Return our current pressing needs out of 100
+        result = []
+        result.append(("physiology", ((100-(self.health + self.stamina) / 2)) * MaslowHierarchy["physiology"]))
+        result.append(("security", (100-(100.0*self.food/4)) * MaslowHierarchy["security"]))
+        result.append(("belonging", (100.0-((sum(list(self.friends.values())) + (25.0 if self.love else 0.0)))) * MaslowHierarchy["belonging"]))
+        result.append(("esteem", (100.0-(sum(list(self.respectedBy.values())))) * MaslowHierarchy["esteem"]))
+        result.append(("self_actualization", (100.0-(self.dances/10.0)) * MaslowHierarchy["self_actualization"]))
+        # Higher the value, higher the need
+        return sorted(result, key=lambda x: x[1])
 
 
     def travel(self, direction):
@@ -125,12 +130,18 @@ class NPC:
     def dance(self):
         return Intention(self, "dance", description=self.name + " dances")
 
+    def die(self):
+        return Intention(self, "die", description=self.name + " dies")
+
     def updateExperience(self, experiences):
         # Update this NPC's experiences
         pass
 
     def step(self, location):
         # What to do?
+        if self.health == 0:
+            return self.die()
+
         # Heal over time, get hungry over time, 
         self.health += 1 if self.health < 100 and self.hunger < 100 else 0
         self.hunger += 1 if self.hunger < 0 else 0
@@ -142,16 +153,32 @@ class NPC:
             candidates = sorted(candidates, key=lambda candidate: candidate[1], reverse=True)
             self.love = candidates[0]
 
-        # Apply Emotional Reasoning.
+        # Check and Set Goals Applying Emotional Reasoning.
+        options=location.availableActions(self)
+        needs = self.getMaslowHierarchy()
+        
+        #TODO: How are we mapping needs to possible actions - won't this rely on experience?
+        # Setting goals, setting motivations
 
         # Do things?
-        action = []
         if self.sleeping > 0:
-            action = [self.zzz,self]
+            return self.zzz()
         if self.stamina <= 0:
-            action = [self.sleep, self]
-        #if action is still empty, do other stuff
-        return action
+            return self.sleep()
+
+        # Do Random thing.
+        shrug = random.choice(options)
+        if shrug == "travel":
+            direction = random.choice(["North", "South", "East", "West"])
+            return self.travel(direction)
+        elif shrug in ["attack", "talk", "hug", "give", "praise", "rebuke"]:
+            target = random.choice([x for x in location.actors if x != self])
+            return self.actions[shrug](target)
+        else:
+            return self.actions[shrug]()
+
+        
+
         
 class Monster(NPC):
     """Monster"""
@@ -183,13 +210,13 @@ class Monster(NPC):
             return Intention(self, "attack", choice, self.name + " attacks " + choice.name)
         else:
             # Sleep
-            return Intention(self, "zzz", None, self.name + " sleeps")
+            return Intention(self, "zzz", None, self.name + " snoozes")
 
     def updateExperiences(self, experiences):
-        for e in experiences:
-            if e[2] == self:
+        for intent, experience in experiences:
+            if intent.target == self:
                 # You made my list.
-                if experiences[1]:
+                if intent.action == "attack":
                     #You attacked me!?
                     self.shitList.append((e[0], 2))
                 else:

@@ -53,74 +53,24 @@ class OCCMap:
 
     def map(self):
         """ Map OCC to PAD """
-        
+        pass
 
-# Map of Action keywords to their related extent (this will vary to degrees of course)
-actionLibrary = {
-    # Exchange
-    "offer" : "relaxed"
-    "impose" : "disdainful",
-    "steal" : "hostile",
-    "gift" : "dependant",
-    "compliment" : "docile",
-    "attack" : "hostile",
-    "defend" : "hostile",
-    "eat" : "exuberant"
-}
-
-class Personality:
-    def __init__(self, currentState=(0,0,0)):
-        self.mood = currentState # Default to neutral
-        self.worldView = {} # Dictionary of Valency's on all sorts of topics, people and things.
-
-        # Action Planning - not exactly emotions, but emotions are influenced by the following.
-        self.needs = {} # What does this personally actually need regardless of what they think they need
-        self.goals = {} # List of personal goals based on desires, which may or maynot satisfy needs.
-        self.plans = [] # List of plans aimed to satisfy goals.
-
-        # Set goals based on Heirarchy of needs?
-        # Physiology - Food/Water/Breathing etc. (May not be relevent unless we want to make a survival game)
-        self.hunger = 0
-        self.stamina = 100
-        
-        # Safety - Security of body, family, health, resources
-        self.health = 100
-
-        # Love/Belonging - Friendship/Family/Intimacy
-        self.belonging = 0 # How many people call me friend. Do I call anyone a lover
-        self.friends = []
-        self.lover = None
-        self.rivals = []
-        # Talking with someone increases friendliness, unless that person is a rival love interest (relative friendliness to our prospective mate)
-
-
-        # Esteem - Confidence, Achievement, respect of and by others.
-
-        # Self-Actualisation: Morality, Creativity, Spontaneity, problem solving, lack of prejudice acceptance of facts (How to model this!?)
-
-
-    def addNeed(self, need, valence):
-        self.needs[need] = valence
-
-    def addGoal(self, desire, valence):
-        self.goals[desire] = valence
-
-    def how_do_I_feel_about(self, initiator=None, target=None, action=None, consequence=None):
+    def how_do_I_feel_about(self, source=None, target=None, action=None, consequence=None):
         """ How do I feel about things. People, Actions, Consequences """
         # Return -1 <= x <= 1
         return 1
 
-    def what_I_think_is_going_to_happen(self, action, initiator, target):
+    def what_I_think_is_going_to_happen(self, action, source, target):
 
         return None
 
     def experience(self, **kwargs):
-        # initiator - a valence on how we feel about the causer
+        # source - a valence on how we feel about the causer
         # target - a valence on how we feel about the target
         # action - a valence on the action maybe - otherwise it is irrelevant except to predict consequence.
         # expectation - how likely we believe the consequence will occur. None if it's happening.
         # consequence - our percieved valence on an outcome.
-        initiator = kwargs["initiator"], 
+        source = kwargs["source"], 
         target = kwargs["target"]
         action = kwargs["action"]
         expectation = kwargs.get("expectation", None)
@@ -128,18 +78,18 @@ class Personality:
         
         feelings = {}
         hif_ConsequenceObjectively = self.how_do_I_feel_about(consequence) # Without context, is this a positive consequence
-        hif_ConsequenceSubjectively = self.how_do_I_feel_about(consequence, initiator, target) # Within context, do I now feel positive about it?
-        hif_initiator = self.how_do_I_feel_about(initiator) # Personal opinion of the initator
+        hif_ConsequenceSubjectively = self.how_do_I_feel_about(consequence, source, target) # Within context, do I now feel positive about it?
+        hif_source = self.how_do_I_feel_about(source) # Personal opinion of the initator
         hif_target = self.how_do_I_feel_about(target) # Personal opinion of the target
         hif_actionObjectively = self.how_do_I_feel_about(action) # Opinion of an action without a context
-        hif_actionSubjectively = self.how_do_I_feel_about(action, initiator, target) # Opinion of the action in this context
-        AnticipatedConsequence = self.what_I_think_is_going_to_happen(action, initiator, target) # What do we expect to happen?
+        hif_actionSubjectively = self.how_do_I_feel_about(action, source, target) # Opinion of the action in this context
+        AnticipatedConsequence = self.what_I_think_is_going_to_happen(action, source, target) # What do we expect to happen?
         hif_AnticipatedConsequence = self.how_do_I_feel_about(AnticipatedConsequence)
 
         # Is this outcome important to us?
         if hif_ConsequenceSubjectively != 0:
 
-            if expectation != None
+            if expectation != None:
                 if hif_ConsequenceSubjectively > 0:
                     # Chance of Good Outcome
                     feelings["hope"] = abs(hif_ConsequenceSubjectively*expectation)
@@ -188,7 +138,7 @@ class Personality:
                 elif hif_actionObjectively < 0: feelings["disapproving"] = abs(hif_actionObjectively)
 
                 # Ego
-                if self == initiator and hif_actionObjectively != 0:
+                if self == source and hif_actionObjectively != 0:
                     if hif_actionObjectively > 0:
                         feelings["pride"] = abs(hif_actionObjectively)
                     elif hif_actionObjectively < 0:
@@ -209,13 +159,13 @@ class Personality:
                 elif feelings.has_key("admiration") and feelings.has_key("joy"):
                     feelings["gratitude"] = (feelings["admiration"]+feelings["joy"]) / 2.0
                 elif feelings.has_key("reproach") and feelings.has_key("distress"):
-                    feelings.has_key("anger") = (feelings["reproach"]+feelings["distress"]) / 2.0
+                    feelings["anger"] = (feelings["reproach"]+feelings["distress"]) / 2.0
 
                 # Catalog Experience for future context
                 return feelings
 
 
-
+# Text from OCC Model documentation - new and improved
 """
 positive and negative are valenced reactions (to “something”)
 pleased is being positive about a consequence (of an event)
@@ -236,8 +186,8 @@ resentment is distress about a consequence (of an event) presumed to be desirabl
 gloating is joy about a consequence (of an event) presumed to be undesirable for someone else
 pity is distress about a consequence (of an event) presumed to be undesirable for someone else
 
-approving is being positive about an action (of an initiator)
-disapproving is being negative about an action (of an initiator)
+approving is being positive about an action (of an source)
+disapproving is being negative about an action (of an source)
 pride is approving of one’s own action
 shame is disapproving of one’s own action
 admiration is approving of someone else’s action
@@ -254,6 +204,59 @@ interest is liking an unfamiliar aspect (of an object)
 disgust is disliking an unfamiliar aspect (of an object)
 
 """
+        
+
+# Map of Action keywords to their related extent (this will vary to degrees of course)
+actionLibrary = {
+    # Exchange
+    "offer" : "relaxed",
+    "impose" : "disdainful",
+    "steal" : "hostile",
+    "gift" : "dependant",
+    "compliment" : "docile",
+    "attack" : "hostile",
+    "defend" : "hostile",
+    "eat" : "exuberant"
+}
+
+class Personality:
+    def __init__(self, currentState=(0,0,0)):
+        self.mood = currentState # Default to neutral
+        self.worldView = {} # Dictionary of Valency's on all sorts of topics, people and things.
+
+        # Action Planning - not exactly emotions, but emotions are influenced by the following.
+        self.needs = {} # What does this personally actually need regardless of what they think they need
+        self.goals = {} # List of personal goals based on desires, which may or maynot satisfy needs.
+        self.plans = [] # List of plans aimed to satisfy goals.
+
+        # Set goals based on Heirarchy of needs?
+        # Physiology - Food/Water/Breathing etc. (May not be relevent unless we want to make a survival game)
+        self.hunger = 0
+        self.stamina = 100
+        
+        # Safety - Security of body, family, health, resources
+        self.health = 100
+
+        # Love/Belonging - Friendship/Family/Intimacy
+        self.belonging = 0 # How many people call me friend. Do I call anyone a lover
+        self.friends = []
+        self.lover = None
+        self.rivals = []
+        # Talking with someone increases friendliness, unless that person is a rival love interest (relative friendliness to our prospective mate)
+
+
+        # Esteem - Confidence, Achievement, respect of and by others.
+
+        # Self-Actualisation: Morality, Creativity, Spontaneity, problem solving, lack of prejudice acceptance of facts (How to model this!?)
+
+
+    def addNeed(self, need, valence):
+        self.needs[need] = valence
+
+    def addGoal(self, desire, valence):
+        self.goals[desire] = valence
+
+    
 
 
 if __name__=="__main__":
