@@ -55,24 +55,27 @@ class Location:
     
     def __contains__(self, item):
         # Check if actor in location
-        if item in self.actors:
+        if isinstance(item, NPC) and item in self.actors:
             return True
-        return False
+        elif isinstance(item, str) and item in [x.name for x in self.actors]:
+            return True
+        else:
+            return False
 
     def availableActions(self, agent):
         actions = []
         if agent.stamina < 80: actions += ["sleep"]
-        if agent.food >0 and len(self.actors) > 1: actions += ["give"]
-        if agent.food > 0: actions += ["eat"]
+        if agent.food >= 25 and len(self.actors) > 1: actions += ["give"]
+        if agent.food >= 25: actions += ["eat"]
         if agent.stamina > 20 and len(self.actors) > 1: actions += ["attack"]
         if agent.stamina > 20: actions += ["travel"]
         if len(self.actors)>1: actions += ["talk", "praise", "rebuke"]
         if agent.love in self.actors: actions += ["hug"]
         if (
-                agent.hunger < 25 and 
+                agent.hunger > 75 and 
                 agent.health == 100 and 
                 agent.stamina > 50 and 
-                agent.food > 0 and 
+                agent.food >= 25 and 
                 agent.love != None and 
                 agent.love.target == agent
         ): actions += ["dance"]
@@ -82,6 +85,12 @@ class Location:
         #this can be extended to include lockable doors, etc
         return len(self.actors) < self.actorLimit
     
+    def getActor(self, name):
+        for a in self.actors:
+            if a.name == name:
+                return a
+        return None
+
     def addDirection(self, directionName, location):
         #add an arbitrary direction exit to this location
         self.directions[directionName] = location
@@ -142,14 +151,14 @@ class Location:
         return [experience]
 
     def eat(self, intent):
-        if intent.agent.food > 0:
+        if intent.agent.food > 25:
             self.logger.info(intent)
-            intent.agent.food -= 1
-            intent.agent.hunger -= 25
-            if intent.agent.hunger < 0: intent.agent.hunger = 0
+            intent.agent.food -= 25
+            intent.agent.hunger += 25
+            if intent.agent.hunger > 100: intent.agent.hunger = 100
             experience = {
-                "hunger" : -25,
-                "food" : -1,
+                "hunger" : +25,
+                "food" : -25,
             }
             # (intent.agent, action, target, location, experience)
             return [experience]
@@ -166,7 +175,10 @@ class Location:
     def zzz(self, intent):
         intent.agent.sleeping -= 1
         intent.agent.stamina += 20
-        intent.agent.stamina = 100 if intent.agent.stamina > 100 else intent.agent.stamina
+        if intent.agent.stamina >= 100: # Wake up.
+            intent.agent.stamina == 100
+            intent.agent.sleeping=0
+         
         self.logger.info(intent)
         return [{"stamina":+20}]
 
@@ -183,7 +195,7 @@ class Location:
             if intent.target not in intent.agent.friends:
                 intent.agent.friends[intent.target] = 0
             intent.agent.friends[intent.target] += 5 # Minor Social improvement
-            return [{"belonging":5}]
+            return [{"friends":5}]
         else:
             self.logger.info("{} tried to talk to {}, but they were asleep.".format(intent.agent, intent.target))
             return []
@@ -193,36 +205,36 @@ class Location:
         if intent.target.love == self and intent.target.sleeping == 0:
             self.logger.info(intent)
             intent.target.friends[intent.agent.name] =  intent.target.friends.get(intent.agent.name, 0) + 20 # Big boost to friendliness - reinforces you as their lover.
-            return [{"belonging" : 20}]
+            return [{"friends" : 20, "love":100}]
         elif intent.target.love != intent.agent:
             self.logger.info("{} tried to hug {}, but was rejected.".format(intent.agent, intent.target))
             # Bad Social Fopar.
             intent.target.friends[intent.agent.name] = intent.target.friends.get(intent.agent.name, 0) - 20 # Unwanted hugs!
-            return [{"belonging" : -20}]
+            return [{"friends" : -20}]
         else:
             self.logger.info("{} tried to hug {}, but they were asleep.".format(intent.agent, intent.target))
             return []
 
     def give(self, intent):
         # Maybe in the future.
-        if intent.agent.food > 0 and intent.target.sleeping == 0:
+        if intent.agent.food >= 25 and intent.target.sleeping == 0:
             self.logger.info(intent)
-            intent.agent.food -= 1
-            intent.target.food += 1
+            intent.agent.food -= 25
+            intent.target.food += 25
             intent.target.friends[intent.agent.name] = intent.target.friends.get(intent.agent.name, 0) + 10  # Rep Boost
-            srcExp = {"food":-1, "belonging":10}
-            trgExp = {"food":1}
-            return [srcExp, trgExp]
+            srcExp = {"food":-25, "friends":10}
+            #trgExp = {"food":25} # Irrelevant what the target gets. We only care about what the giver gets.
+            return [srcExp]
         else:
             self.logger.info("{} tried to give {} some food, but they were asleep".format(intent.agent, intent.target))
             return []
 
     def praise(self, intent):
-        # Praise is complicated. The person being praised should feel more esteem. And onlookers will experience different things based on the perspectives of the two involved.
+        # Praise is complicated. The person being praised should feel more respect. And onlookers will experience different things based on the perspectives of the two involved.
         if intent.target.sleeping == 0 and intent.target in self.actors: # They are local - they can hear it
             self.logger.info(intent)
             intent.target.respectedBy[intent.agent.name] = intent.target.respectedBy.get(intent.agent.name, 0) + 5
-            return [{"esteem" : 5}]
+            return [{"respect" : 5}]
         else:
             self.logger.info("{} praised {} even though they weren't able to hear it".format(intent.agent, intent.target))
             return []
@@ -232,7 +244,7 @@ class Location:
         if intent.target.sleeping == 0 and intent.target in self.actors: # They are local - they can hear it
             self.logger.info(intent)
             intent.target.respectedBy[intent.agent.name] = intent.target.respectedBy.get(intent.agent.name, 0) -5
-            return [{"esteem" : -5}]
+            return [{"respect" : -5}]
         else:
             self.logger.info("{} praised {} even though they weren't able to hear it".format(intent.agent, intent.target))
             return []
@@ -250,17 +262,17 @@ class Location:
         """
         # You can only dance when other needs are met.
         if (
-                intent.agent.hunger < 25 and 
+                intent.agent.hunger > 75 and 
                 intent.agent.health == 100 and 
                 intent.agent.stamina > 50 and 
-                intent.agent.food > 0 and 
+                intent.agent.food >= 25 and 
                 intent.agent.love != None and 
                 intent.agent.love.target == intent.agent
         ):
             self.logger.info(intent)
             intent.agent.stamina -= 50
-            intent.agent.dance += 1
-            experience = {"dance":1, "stamina":-50 }
+            intent.agent.dance += 10
+            experience = {"self_actualisation":10, "stamina":-50 }
             return [experience]
         else:
             self.logger.info(intent.agent + " tried to dance but couldn't get into the swing of things")

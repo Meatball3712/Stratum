@@ -8,7 +8,7 @@ MaslowHierarchy = {
     "physiology" : 5,
     "security" : 4,
     "belonging" : 3,
-    "esteem" : 2,
+    "respect" : 2,
     "self_actualization" : 1
 }
 
@@ -38,7 +38,7 @@ class NPC:
         self.food = kwargs.get("food", 0)
         
         # Physiology - Food/Water/Breathing etc. (May not be relevent unless we want to make a survival game)
-        self.hunger = kwargs.get("hunger", 0)
+        self.hunger = kwargs.get("hunger", 100) # Hunger: 100 is sated, 0 is starving
         self.stamina = kwargs.get("stamina", 100)
 
         # Safety - Security of body, family, health, resources
@@ -76,22 +76,24 @@ class NPC:
         }
 
         self.experience = {} # A dictionary of experiences
-        # (source, action, target, location) = (change in stats)
+        # (source, action, target, location) = {}change in stats}
     
     def __str__(self):
         return self.name
 
-    def getMaslowHierarchy(self):
+    def getNeeds(self):
         # Return our current pressing needs out of 100
         result = []
-        result.append(("physiology", ((100-(self.health + self.stamina) / 2)) * MaslowHierarchy["physiology"]))
-        result.append(("security", (100-(100.0*self.food/4)) * MaslowHierarchy["security"]))
-        result.append(("belonging", (100.0-((sum(list(self.friends.values())) + (25.0 if self.love else 0.0)))) * MaslowHierarchy["belonging"]))
-        result.append(("esteem", (100.0-(sum(list(self.respectedBy.values())))) * MaslowHierarchy["esteem"]))
-        result.append(("self_actualization", (100.0-(self.dances/10.0)) * MaslowHierarchy["self_actualization"]))
+        result.append(("health", (100 - self.health) * MaslowHierarchy["physiology"]))
+        result.append(("stamina", (100 - self.stamina) * MaslowHierarchy["physiology"]))
+        result.append(("hunger", (100 - self.hunger) * MaslowHierarchy["physiology"]))
+        result.append(("food", (100.0 - self.food) * MaslowHierarchy["security"]))
+        result.append(("friends", (100.0 - sum(list(self.friends.values()))) * MaslowHierarchy["belonging"]))
+        result.append(("love", (100-(100 if self.love and self.love.love == self else 50 if self.love else 0)) * MaslowHierarchy["belonging"]))
+        result.append(("respect", (100.0-sum(list(self.respectedBy.values()))) * MaslowHierarchy["respect"]))
+        result.append(("self_actualization", (100.0-self.dances) * MaslowHierarchy["self_actualization"]))
         # Higher the value, higher the need
-        return sorted(result, key=lambda x: x[1])
-
+        return sorted([x for x in result if x[1] > 0], key=lambda x: x[1], reverse=True)
 
     def travel(self, direction):
         #TODO: change this whole thing to use the travel attached to the location
@@ -135,7 +137,12 @@ class NPC:
 
     def updateExperience(self, experiences):
         # Update this NPC's experiences
-        pass
+        for intent, location, experience in self.experience:
+            event = (intent.agent.name, intent.action, intent.target.name, location.name)
+            if event not in self.experiences:
+                self.experiences[event] = {}
+            for key, value in experience.items():
+                self.experiences[event][key] = self.experiences[event].get(key, 0)*0.9 + value*0.1
 
     def step(self, location):
         # What to do?
@@ -143,9 +150,9 @@ class NPC:
             return self.die()
 
         # Heal over time, get hungry over time, 
-        self.health += 1 if self.health < 100 and self.hunger < 100 else 0
-        self.hunger += 1 if self.hunger < 0 else 0
-        self.health -= 1 if self.hunger == 100 else 0
+        self.health += 1 if self.health < 100 and self.hunger > 0 else 0
+        self.hunger -= 1 if self.hunger > 0 else 0
+        self.health -= 1 if self.hunger == 0 else 0
 
         # Do we have anyone we love
         candidates = [(c, self.friends[c]) for c in self.friends if self.friends[c] > 50]
@@ -153,12 +160,6 @@ class NPC:
             candidates = sorted(candidates, key=lambda candidate: candidate[1], reverse=True)
             self.love = candidates[0]
 
-        # Check and Set Goals Applying Emotional Reasoning.
-        options=location.availableActions(self)
-        needs = self.getMaslowHierarchy()
-        
-        #TODO: How are we mapping needs to possible actions - won't this rely on experience?
-        # Setting goals, setting motivations
 
         # Do things?
         if self.sleeping > 0:
@@ -166,23 +167,55 @@ class NPC:
         if self.stamina <= 0:
             return self.sleep()
 
-        # Do Random thing.
-        shrug = random.choice(options)
-        if shrug == "travel":
+        # Check and Set Goals Applying Emotional Reasoning.
+        options=location.availableActions(self)
+        needs = self.getNeeds()
+        
+        N = None
+        weight = 0
+        for need in needs:
+            self.logger.debug("{0} craves {1[0]} ({1[1]:.2f})".format(self.name, need))
+            if need[1]/2 > weight: # Worth it.
+                weight = need[1]
+            else:
+                self.logger.debug("but {} doesn't know what to do. So in desperation he's going to try something crazy.".format(self.name))
+                # Do Random thing.
+                shrug = random.choice(options)
+                if shrug == "travel":
+                    direction = random.choice(["North", "South", "East", "West"])
+                    return self.travel(direction)
+                elif shrug in ["attack", "talk", "hug", "give", "praise", "rebuke"]:
+                    target = random.choice([x for x in location.actors if x != self])
+                    return self.actions[shrug](target)
+                else:
+                    return self.actions[shrug]()
+
+            # Can we accomplish it here?
+            #  Check if there's an action we think might help.
+            possibleActions = sorted([x for x in list(self.experience.items()) if need == x[0]], key=lambda x: x[1])
+            for event, valence in possibleActions:
+                src, act, target, loc = event
+                if valence > 0 and act in options:
+                    # Lets do this.
+                    if src == target: # This is a self targeting action.
+                        self.actions[act]()
+                    else:
+                        # Is the person here that this worked on here?
+                        if target in location:
+                            return self.actions[act](location.getActor(target))
+                        else:
+                            # Pick Random? - could probably pick a better candidate than that.
+                            target = random.choice([x for x in location.actors if x != self])
+                            return self.actions[act](target)
+        else:
+            # No needs? lets travel a little.
             direction = random.choice(["North", "South", "East", "West"])
             return self.travel(direction)
-        elif shrug in ["attack", "talk", "hug", "give", "praise", "rebuke"]:
-            target = random.choice([x for x in location.actors if x != self])
-            return self.actions[shrug](target)
-        else:
-            return self.actions[shrug]()
-
-        
 
         
 class Monster(NPC):
     """Monster"""
-    def __init__(self, name="Monster", health=20, strength=10, food=4, **kwargs):
+    def __init__(self, name="Monster", health=20, strength=10, food=25, **kwargs):
         NPC.__init__(self, name, health=health, strength=strength, food=food, **kwargs)
         self.health = health # If we want to have varying difficulty monsters
         self.shitList = deque(maxlen=5)
