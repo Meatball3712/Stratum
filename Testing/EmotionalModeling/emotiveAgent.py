@@ -80,23 +80,22 @@ class NPC:
             target.health -= self.strength
 
             if target.health <= 0:
-                self.hunger -= target.food
+                self.food += target.food
 
         else:
             target.health -= self.strength
 
-        if self.hunger < 0: self.hunger = 0
         if self.stamina <= 0: self.sleep()
 
     def eat(self):
         if self.food > 0:
             self.food -= 1
             self.hunger -= 25
+            if self.hunger < 0: self.hunger = 0
 
     def run(self):
         # You flee takes stamina, but you avoid taking damage
         self.stamina -= 20
-
 
     def zzz(self):
         if self.sleeping > 0: self.sleeping -= 1
@@ -113,14 +112,14 @@ class NPC:
 
     def talk(self, target):
         # increase friendship rating with one npc.
-        if target not in self.rivals:
+        if target not in self.rivals and target.sleeping == 0:
             if target not in self.friends:
                 self.friends[target] = 0
             self.friends[target] += 5 # Minor Social improvement
 
     def hug(self, target):
         # You can only hug someone who considers you their love. No cheating.
-        if target.love == self:
+        if target.love == self and target.sleeping == 0:
             target.friends[self] += 20 # Big boost to friendliness - reinforces you as their lover.
 
     def recieve(self, source):
@@ -137,11 +136,14 @@ class NPC:
 
     def give(self, target):
         # Maybe in the future.
-        if self.food > 0:
+        if self.food > 0 and target.sleeping == 0:
             target.recieve(self)
             self.food -= 1
 
     def praise(self, target):
+        if target.sleeping != 0:
+            return
+
         if target not in self.respectForOthers:
             self.respectForOthers[target] = 0
         self.respectForOthers[target] += 5
@@ -153,6 +155,9 @@ class NPC:
         self.respectedBy[source] += 5
 
     def rebuke(self, target):
+        if target.sleeping != 0:
+            return
+            
         if target in self.respectForOthers and self.respectForOthers[target] > 0:
             self.respectForOthers[target] -= 5
         target.getRebuked(self)
@@ -183,5 +188,9 @@ class NPC:
             candidates = sorted(candidates, key=lambda candidate: candidate[1], reverse=True)
             self.love = candidates[0]
 
+
         # Do things?
-        # Do we have a love interest?
+        if self.sleeping > 0:
+            self.sleeping -= 1
+            return
+        
