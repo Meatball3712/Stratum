@@ -1,33 +1,46 @@
 # Emotive Agent
 # Testing the machine learning capabilities for emotional intelligence.
 
+import random
+from collections import deque
 
+MaslowHierarchy = {
+    "physiology" : 5,
+    "security" : 4,
+    "belonging" : 3,
+    "esteem" : 2,
+    "self_actualization" : 1
+}
 
-class Monster:
-    """Monster"""
-    def __init__(self, health):
-        self.name = "Monster"
-        self.health = health # If we want to have varying difficulty monsters
-        self.food = 75
-        self.attack = 10
-    
-    def step(self, location):
-        return []
+class Intention:
+    """ Intention Declaration """
+    def __init__(self, agent, action, target=None, description=""):
+        self.agent = agent
+        self.action = action
+        self.target = target if target else agent
+        self.description = description
+
+    def __str__(self):
+        return self.description
+
+    def __repr__(self):
+        return self.agent + " -> " + self.action + " @ " + self.target
 
 class NPC:
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         self.name = name
 
          # Set goals based on Heirarchy of needs?
-        # Physiology - Food/Water/Breathing etc. (May not be relevent unless we want to make a survival game)
-        self.hunger = 0
-        self.stamina = 100
         self.sleeping = 0
-        self.strength = 20 # How hard we attack
-        self.food = 0
+        self.strength = kwargs.get("strength", 20) # How hard we attack
+        self.food = kwargs.get("food", 0)
         
+        # Physiology - Food/Water/Breathing etc. (May not be relevent unless we want to make a survival game)
+        self.hunger = kwargs.get("hunger", 0)
+        self.stamina = kwargs.get("stamina", 100)
+
         # Safety - Security of body, family, health, resources
-        self.health = 100
+        self.health = kwargs.get("health", 100)
 
         # Love/Belonging - Friendship/Family/Intimacy
         self.belonging = 0 # How many people call me friend. Do I love anyone
@@ -37,17 +50,17 @@ class NPC:
         # Talking with someone increases friendliness, as does recieving praise
         # unless that person is a rival love interest (relative friendliness to our prospective mate)
 
-
         # Esteem - Confidence, Achievement, respect of and by others.
         # Earned by offering and recieving praise, deminished by rebukes
-        self.respectedBy = 0
-        self.respectForOthers = 0
+        self.respectedBy = {}
+        self.respectForOthers = {}
 
         # Self-Actualisation: Morality, Creativity, Spontaneity, problem solving, lack of prejudice acceptance of facts (How to model this!?)
         self.dances = 0 # How many dances have we had. We can only dance when all other criteria are satisfied. A measure of fulfillment
 
         self.actions = {
             "sleep" : self.sleep,
+            "zzz" : self.zzz,
             "attack" : self.attack,
             "run" : self.run,
             "travel" : self.travel,
@@ -58,119 +71,67 @@ class NPC:
             "give" : self.give,
             "dance" : self.dance
         }
+
+        self.experience = {} # A dictionary of experiences
+        # (source, action, target, location) = (change in stats)
     
-    def travel(self, location):
+    def __str__(self):
+        return self.name
+
+    def getMaslowHierarchy(self):
+        result = {}
+        result["physiology"] = (self.health + self.stamina) / 2
+        result["security"] = self.food/4
+        result["belonging"] = (sum(list(self.friends.values())) + (25 if self.love else 0)) / 100
+        result["esteem"] = sum(list(self.respectedBy.values())) / 100
+        result["self_actualisation"] = self.dances/10
+        return result
+
+
+    def travel(self, direction):
         #TODO: change this whole thing to use the travel attached to the location
-        pass
+        return Intention(self, "travel", direction, self.name + " travels " + direction)
 
     def attack(self, target):
-        # Decrease Hunger if monster.
-        self.stamina -= 20
-        if target == isinstance(Monster):
-            self.health -= target.attack
-            
-            target.health -= self.strength
-
-            if target.health <= 0:
-                self.food += target.food
-
-        else:
-            target.health -= self.strength
-
-        return self.name + " attacks " + target.name
+        return Intention(self, "attack", target, self.name + " attacks " + target.name)
 
     def eat(self):
-        if self.food > 0:
-            self.food -= 1
-            self.hunger -= 25
-            if self.hunger < 0: self.hunger = 0
-            return self.name + " eats some food"
+        return Intention(self, "eat", description=self.name + " eats some food")
 
     def run(self):
-        # You flee takes stamina, but you avoid taking damage
-        self.stamina -= 20
-        return self.name + " runs away"
+        return Intention(self, "run", description=self.name + " runs away")
 
     def zzz(self):
-        if self.sleeping > 0: self.sleeping -= 1
-        return self.name + " sleeps"
+        return Intention(self, "zzz", description = self.name + " sleeps")
 
     def sleep(self):
-        # Sleep for 5 turns or something
-        self.sleeping = 5
-        self.stamina = 100
-        return self.name + " goes to sleep"
+        return Intention(self, "sleep", description = self.name + " goes to sleep")
 
     def talk(self, target):
-        # increase friendship rating with one npc.
-        if target not in self.rivals and target.sleeping == 0:
-            if target not in self.friends:
-                self.friends[target] = 0
-            self.friends[target] += 5 # Minor Social improvement
-            return self.name + " talks to " + target.name
+        return Intention(self, "talk", target, description=self.name + " talks to " + target.name)
 
     def hug(self, target):
-        # You can only hug someone who considers you their love. No cheating.
-        if target.love == self and target.sleeping == 0:
-            target.friends[self] += 20 # Big boost to friendliness - reinforces you as their lover.
-            return self.name + " hugs " + target.name
-
-    def recieve(self, source):
-        # Receive a gift of food. Probably modified by hunger/how much food we have
-        self.food += 1
-        if source in self.rivals: # giving me a sandwich doesn't mean we're friends
-            return False
-
-        elif source not in self.friends:
-            self.friends[source] = 0
-
-        self.friends[source] += 10 # a gift of food is better than a chat
-        return self.name + " receives a gift from " + target.name
-
+        return Intention(self, "hug", target, description=self.name + " hugs " + target.name)
 
     def give(self, target):
-        # Maybe in the future.
-        if self.food > 0 and target.sleeping == 0:
-            target.recieve(self)
-            self.food -= 1
-            return self.name + " gives a gift to " + target.name
+        return Intention(self, "give", target, description=self.name + " gives a gift to " + target.name)
 
     def praise(self, target):
-        if target.sleeping == 0:
-            if target not in self.respectForOthers:
-                self.respectForOthers[target] = 0
-            self.respectForOthers[target] += 5
-            target.getPraised(self)
-            return self.name + " praises " + target.name
-
-    def getPraised(self, source):
-        if source not in self.respectedBy:
-            self.respectedBy[source] = 0
-        self.respectedBy[source] += 5
-        return self.name + " receives praise from " + target.name
+        return Intention(self, "praise", target, description=self.name + " praises " + target.name)
 
     def rebuke(self, target):
-        if target.sleeping == 0:
-            if target in self.respectForOthers and self.respectForOthers[target] > 0:
-                self.respectForOthers[target] -= 5
-            target.getRebuked(self)
-            return self.name + " rebukes " + target.name
-
-    def getRebuked(self, source):
-        if source in self.respectedBy and self.respectedBy[source] > 0:
-            self.respectedBy[source] -= 5
-        return self.name + " is rebuked by " + target.name
+        return Intention(self, "rebuke", target, description=self.name + " rebukes " + target.name)
 
     def dance(self):
-        # You can only dance when other needs are met.
-        self.stamina -= 50
-        if self.hunger < 25 and self.health == 100 and self.stamina > 50 and self.food > 0 and self.love != None and self.love.target == self:
-            dance += 1
-            return self.name + " dances"
+        return Intention(self, "dance", description=self.name + " dances")
+
+    def updateExperience(self, experiences):
+        # Update this NPC's experiences
+        pass
 
     def step(self, location):
         # What to do?
-        # Heal overtime, get hungry overtime, 
+        # Heal over time, get hungry over time, 
         self.health += 1 if self.health < 100 and self.hunger < 100 else 0
         self.hunger += 1 if self.hunger < 0 else 0
         self.health -= 1 if self.hunger == 100 else 0
@@ -181,6 +142,7 @@ class NPC:
             candidates = sorted(candidates, key=lambda candidate: candidate[1], reverse=True)
             self.love = candidates[0]
 
+        # Apply Emotional Reasoning.
 
         # Do things?
         action = []
@@ -191,3 +153,45 @@ class NPC:
         #if action is still empty, do other stuff
         return action
         
+class Monster(NPC):
+    """Monster"""
+    def __init__(self, name="Monster", health=20, strength=10, food=4, **kwargs):
+        NPC.__init__(self, name, health=health, strength=strength, food=food, **kwargs)
+        self.health = health # If we want to have varying difficulty monsters
+        self.shitList = deque(maxlen=5)
+        self.aggression = 0.25
+    
+    def step(self, location):
+        # If someone interacted with it, and they're still around. Attack them.
+        self.shitList = deque(sorted(self.shitList, key=lambda e: e[1]))
+        while len(self.shitList) > 0:
+            target = self.shitList.pop()
+            if target in location:
+                break
+        else:
+            target = None
+
+        if target:
+            return Intention(self, "attack", target, self.name + " attacks " + choice.name)
+
+        # Do I want to attack?
+        if len(location.actors) > 1 and random.random() < self.aggression:
+            # Yes, Yes I do. Look... fresh meat.
+            choice = None
+            while not choice or choice == self:
+                choice = random.choice(location.actors)
+            return Intention(self, "attack", choice, self.name + " attacks " + choice.name)
+        else:
+            # Sleep
+            return Intention(self, "zzz", None, self.name + " sleeps")
+
+    def updateExperiences(self, experiences):
+        for e in experiences:
+            if e[2] == self:
+                # You made my list.
+                if experiences[1]:
+                    #You attacked me!?
+                    self.shitList.append((e[0], 2))
+                else:
+                    # You dare disturb me!?
+                    self.shitList.append((e[0], 1))
