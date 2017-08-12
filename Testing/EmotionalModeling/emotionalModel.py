@@ -78,15 +78,32 @@ class Personality:
         self.goals = {} # List of personal goals based on desires, which may or maynot satisfy needs.
         self.plans = [] # List of plans aimed to satisfy goals.
 
+        # Set goals based on Heirarchy of needs?
+        # Physiology - Food/Water/Breathing etc. (May not be relevent unless we want to make a survival game)
+        self.hunger = 0
+        self.stamina = 100
+        
+        # Safety - Security of body, family, health, resources
+        self.health = 100
+
+        # Love/Belonging - Friendship/Family/Intimacy
+        self.belonging = 0 # How many people call me friend. Do I call anyone a lover
+        self.friends = []
+        self.lover = None
+        self.rivals = []
+        # Talking with someone increases friendliness, unless that person is a rival love interest (relative friendliness to our prospective mate)
+
+
+        # Esteem - Confidence, Achievement, respect of and by others.
+
+        # Self-Actualisation: Morality, Creativity, Spontaneity, problem solving, lack of prejudice acceptance of facts (How to model this!?)
+
 
     def addNeed(self, need, valence):
         self.needs[need] = valence
 
     def addGoal(self, desire, valence):
         self.goals[desire] = valence
-
-    def addGoal(self, goal):
-        self.goals.append(goal)
 
     def how_do_I_feel_about(self, initiator=None, target=None, action=None, consequence=None):
         """ How do I feel about things. People, Actions, Consequences """
