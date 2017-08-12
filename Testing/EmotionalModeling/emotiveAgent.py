@@ -62,7 +62,6 @@ class NPC:
 
         self.actions = {
             "sleep" : self.sleep,
-            "zzz" : self.zzz,
             "attack" : self.attack,
             "run" : self.run,
             "eat" : self.eat,
@@ -108,11 +107,8 @@ class NPC:
     def run(self):
         return Intention(self, "run", description=self.name + " runs away")
 
-    def zzz(self):
-        return Intention(self, "zzz", description = self.name + " sleeps")
-
     def sleep(self):
-        return Intention(self, "sleep", description = self.name + " goes to sleep")
+        return Intention(self, "sleep", description = self.name + " sleeps")
 
     def talk(self, target):
         return Intention(self, "talk", target, description=self.name + " talks to " + target.name)
@@ -142,7 +138,10 @@ class NPC:
             if event not in self.experiences:
                 self.experiences[event] = {}
             for key, value in experience.items():
-                self.experiences[event][key] = self.experiences[event].get(key, 0)*0.9 + value*0.1
+                if intent.agent.name == self.name: #This was me. Get double XP
+                    self.experiences[event][key] = self.experiences[event].get(key, 0)*0.9 + value*0.2
+                else:
+                    self.experiences[event][key] = self.experiences[event].get(key, 0)*0.9 + value*0.1
 
     def step(self, location):
         # What to do?
@@ -162,9 +161,7 @@ class NPC:
 
 
         # Do things?
-        if self.sleeping > 0:
-            return self.zzz()
-        if self.stamina <= 0:
+        if self.sleeping > 0 or self.stamina <= 0:
             return self.sleep()
 
         # Check and Set Goals Applying Emotional Reasoning.
@@ -178,7 +175,7 @@ class NPC:
             if need[1]/2 > weight: # Worth it.
                 weight = need[1]
             else:
-                self.logger.debug("but {} doesn't know what to do. So in desperation he's going to try something crazy.".format(self.name))
+                self.logger.debug("but {} doesn't know what to do. So in desperation they're going to try something crazy.".format(self.name))
                 # Do Random thing.
                 shrug = random.choice(options)
                 if shrug == "travel":
@@ -243,7 +240,7 @@ class Monster(NPC):
             return Intention(self, "attack", choice, self.name + " attacks " + choice.name)
         else:
             # Sleep
-            return Intention(self, "zzz", None, self.name + " snoozes")
+            return Intention(self, "sleep", None, self.name + " snoozes")
 
     def updateExperiences(self, experiences):
         for intent, experience in experiences:

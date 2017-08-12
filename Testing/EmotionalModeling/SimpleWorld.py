@@ -41,7 +41,6 @@ class Location:
         self.actionMap = {
             "travel" : self.travel,
             "attack" : self.attack,
-            "zzz" : self.zzz,
             "sleep" : self.sleep,
             "run" : self.run,
             "eat" : self.eat,
@@ -163,7 +162,7 @@ class Location:
             # (intent.agent, action, target, location, experience)
             return [experience]
         else:
-            self.logger.info(intent.agent + " wanted to eat, but had no food")
+            self.logger.info("{} wanted to eat, but had no food".format(intent.agent))
             return []
 
     def run(self, intent):
@@ -172,7 +171,11 @@ class Location:
         intent.agent.stamina -= 20
         return [{"stamina":-20}]
 
-    def zzz(self, intent):
+    def sleep(self, intent):
+        # Sleep for 5 turns or something
+        if intent.agent.sleeping == 0:
+            intent.agent.sleeping = 2
+        
         intent.agent.sleeping -= 1
         intent.agent.stamina += 20
         if intent.agent.stamina >= 100: # Wake up.
@@ -181,12 +184,6 @@ class Location:
          
         self.logger.info(intent)
         return [{"stamina":+20}]
-
-    def sleep(self, intent):
-        # Sleep for 5 turns or something
-        intent.agent.sleeping = 5
-        self.logger.info(intent)
-        return []
 
     def talk(self, intent):
         # increase friendship rating with one npc.
