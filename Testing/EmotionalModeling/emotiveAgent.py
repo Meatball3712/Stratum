@@ -80,6 +80,20 @@ class NPC:
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        # give us the stats rundown.
+        return """{self.name}
+------------------
+   Health: {self.health:>5}
+   Food:   {self.food:>5}
+   Stamina:{self.stamina:>5}
+   Hunger: {self.hunger:>5}
+   Friends:{friends:>5}
+   Respect:{respect:>5}
+   Love:   {love:>5}
+   Dances: {self.dances:>5}
+ """.format(self=self, love=(self.love if self.love else "No one"), friends=sum(list(self.friends.values())), respect=sum(list(self.respectedBy.values())))
+
     def getNeeds(self):
         # Return our current pressing needs out of 100
         result = []
@@ -133,19 +147,22 @@ class NPC:
 
     def updateExperience(self, experiences):
         # Update this NPC's experiences
-        for intent, location, experience in self.experience:
-            event = (intent.agent.name, intent.action, intent.target.name, location.name)
-            if event not in self.experiences:
-                self.experiences[event] = {}
+        for intent, location, experience in experiences:
+            if isinstance(intent.target, NPC):
+                event = (intent.agent.name, intent.action, intent.target.name, location.name)
+            else:
+                event = (intent.agent.name, intent.action, intent.target, location.name)
+            if event not in self.experience:
+                self.experience[event] = {}
             for key, value in experience.items():
                 if intent.agent.name == self.name: #This was me. Get double XP
-                    self.experiences[event][key] = self.experiences[event].get(key, 0)*0.9 + value*0.2
+                    self.experience[event][key] = self.experience[event].get(key, 0)*0.9 + value*0.2
                 else:
-                    self.experiences[event][key] = self.experiences[event].get(key, 0)*0.9 + value*0.1
+                    self.experience[event][key] = self.experience[event].get(key, 0)*0.9 + value*0.1
 
     def step(self, location):
         # What to do?
-        if self.health == 0:
+        if self.health <= 0:
             return self.die()
 
         # Heal over time, get hungry over time, 
@@ -172,7 +189,7 @@ class NPC:
         weight = 0
         for need in needs:
             self.logger.debug("{0} craves {1[0]} ({1[1]:.2f})".format(self.name, need))
-            if need[1]/2 > weight: # Worth it.
+            if need[1] > weight/2: # Worth it.
                 weight = need[1]
             else:
                 self.logger.debug("but {} doesn't know what to do. So in desperation they're going to try something crazy.".format(self.name))
@@ -220,6 +237,9 @@ class Monster(NPC):
     
     def step(self, location):
         # If someone interacted with it, and they're still around. Attack them.
+        if self.health <= 0:
+            return self.die()
+            
         self.shitList = deque(sorted(self.shitList, key=lambda e: e[1]))
         while len(self.shitList) > 0:
             target = self.shitList.pop()
@@ -243,12 +263,12 @@ class Monster(NPC):
             return Intention(self, "sleep", None, self.name + " snoozes")
 
     def updateExperiences(self, experiences):
-        for intent, experience in experiences:
+        for intent, location, experience in experiences:
             if intent.target == self:
                 # You made my list.
                 if intent.action == "attack":
                     #You attacked me!?
-                    self.shitList.append((e[0], 2))
+                    self.shitList.append((intent.agent, 2))
                 else:
                     # You dare disturb me!?
-                    self.shitList.append((e[0], 1))
+                    self.shitList.append((intent.agent, 1))

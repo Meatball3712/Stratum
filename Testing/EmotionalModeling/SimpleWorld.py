@@ -111,7 +111,9 @@ class Location:
         self.experience = []
         for intent in self.currentActions:
             if intent.action in self.actionMap:
-                self.experience += [intent, self.actionMap[intent.action](intent)]
+                exp = self.actionMap[intent.action](intent)
+                if exp:
+                    self.experience.append((intent, self, exp))
 
     def shareExperiences(self):
         for actor in self.actors:
@@ -125,11 +127,11 @@ class Location:
             intent.agent.stamina -= 20
             self.actors.remove(intent.agent)
             #should the actor get tired from moving?
-            return [{"stamina":-20}]
+            return {"stamina":-20}
         else:
             #maybe make the actor more frustrated?
             self.logger.info("{} tries to head {} but their way is blocked".format(intent.agent, intent.target))
-            return []
+            return None
 
     def attack(self, intent):
         # Decrease Hunger if monster.
@@ -147,7 +149,7 @@ class Location:
             intent.agent.food += intent.target.food
             srcExperience["food"] = intent.target.food
 
-        return [experience]
+        return experience
 
     def eat(self, intent):
         if intent.agent.food > 25:
@@ -160,16 +162,16 @@ class Location:
                 "food" : -25,
             }
             # (intent.agent, action, target, location, experience)
-            return [experience]
+            return experience
         else:
             self.logger.info("{} wanted to eat, but had no food".format(intent.agent))
-            return []
+            return None
 
     def run(self, intent):
         # You flee takes stamina, but you avoid taking damage
         self.logger.info(intent)
         intent.agent.stamina -= 20
-        return [{"stamina":-20}]
+        return {"stamina":-20}
 
     def sleep(self, intent):
         # Sleep for 5 turns or something
@@ -183,7 +185,7 @@ class Location:
             intent.agent.sleeping=0
          
         self.logger.info(intent)
-        return [{"stamina":+20}]
+        return {"stamina":+20}
 
     def talk(self, intent):
         # increase friendship rating with one npc.
@@ -192,25 +194,25 @@ class Location:
             if intent.target not in intent.agent.friends:
                 intent.agent.friends[intent.target] = 0
             intent.agent.friends[intent.target] += 5 # Minor Social improvement
-            return [{"friends":5}]
+            return {"friends":5}
         else:
             self.logger.info("{} tried to talk to {}, but they were asleep.".format(intent.agent, intent.target))
-            return []
+            return None
 
     def hug(self, intent):
         # You can only hug someone who considers you their love. No cheating.
         if intent.target.love == self and intent.target.sleeping == 0:
             self.logger.info(intent)
             intent.target.friends[intent.agent.name] =  intent.target.friends.get(intent.agent.name, 0) + 20 # Big boost to friendliness - reinforces you as their lover.
-            return [{"friends" : 20, "love":100}]
+            return {"friends" : 20, "love":100}
         elif intent.target.love != intent.agent:
             self.logger.info("{} tried to hug {}, but was rejected.".format(intent.agent, intent.target))
             # Bad Social Fopar.
             intent.target.friends[intent.agent.name] = intent.target.friends.get(intent.agent.name, 0) - 20 # Unwanted hugs!
-            return [{"friends" : -20}]
+            return {"friends" : -20}
         else:
             self.logger.info("{} tried to hug {}, but they were asleep.".format(intent.agent, intent.target))
-            return []
+            return None
 
     def give(self, intent):
         # Maybe in the future.
@@ -221,35 +223,35 @@ class Location:
             intent.target.friends[intent.agent.name] = intent.target.friends.get(intent.agent.name, 0) + 10  # Rep Boost
             srcExp = {"food":-25, "friends":10}
             #trgExp = {"food":25} # Irrelevant what the target gets. We only care about what the giver gets.
-            return [srcExp]
+            return srcExp
         else:
             self.logger.info("{} tried to give {} some food, but they were asleep".format(intent.agent, intent.target))
-            return []
+            return None
 
     def praise(self, intent):
         # Praise is complicated. The person being praised should feel more respect. And onlookers will experience different things based on the perspectives of the two involved.
         if intent.target.sleeping == 0 and intent.target in self.actors: # They are local - they can hear it
             self.logger.info(intent)
             intent.target.respectedBy[intent.agent.name] = intent.target.respectedBy.get(intent.agent.name, 0) + 5
-            return [{"respect" : 5}]
+            return {"respect" : 5}
         else:
             self.logger.info("{} praised {} even though they weren't able to hear it".format(intent.agent, intent.target))
-            return []
+            return None
 
     def rebuke(self, intent):
         # Everyone in that location should have an reduced opinion of the target, and a marginal reduced opinion for the source
         if intent.target.sleeping == 0 and intent.target in self.actors: # They are local - they can hear it
             self.logger.info(intent)
             intent.target.respectedBy[intent.agent.name] = intent.target.respectedBy.get(intent.agent.name, 0) -5
-            return [{"respect" : -5}]
+            return {"respect" : -5}
         else:
             self.logger.info("{} praised {} even though they weren't able to hear it".format(intent.agent, intent.target))
-            return []
+            return None
 
     def die(self, intent):
         # Rest in Peace - this is complicated?
         self.actors.remove(intent.agent)
-        return []
+        return None
 
     def dance(self, intent):
         """
@@ -270,10 +272,10 @@ class Location:
             intent.agent.stamina -= 50
             intent.agent.dance += 10
             experience = {"self_actualisation":10, "stamina":-50 }
-            return [experience]
+            return experience
         else:
             self.logger.info(intent.agent + " tried to dance but couldn't get into the swing of things")
-            return []
+            return None
 
 class World:
     
@@ -283,6 +285,7 @@ class World:
         #indicate directions through the locations
         self.logger = logger if logger else setupDefaultLogger()
         self.locations = {}
+        self.cast = []
         for l in locationData:
             self.logger.debug("Creating Location {name}: {desc}".format(**l))
             self.locations[l["name"]] = Location(l["name"],l["desc"],logger=self.logger)
@@ -292,6 +295,7 @@ class World:
         #load actors?
     
     def addActor(self, actor, location):
+        self.cast.append(actor)
         self.locations[location].actors.append(actor)
     
     def update(self):
@@ -339,6 +343,16 @@ if __name__ == "__main__":
     w.addActor(NPC("Jim",logger=logger),"village")
     w.addActor(Monster("The Dread Seeker",logger=logger),"forest")
     
-    for i in range(20):
-        w.update()
+    c = 0
+    while c < 5 and len([x for x in w.cast if (not isinstance(x, Monster) and x.health>0)]):
+        for i in range(20):
+            w.update()
+        for actor in w.cast:
+            print(repr(actor))
+        c += 1
+    if c == 5:
+        logger.info("End Simulation")
+    else:
+        logger.error("Uhoh - Everyone's dead.")
+
 
