@@ -1,31 +1,20 @@
+import numpy as np
+import csv
+
 # PAD Model
 class PADMap:
     def __init__(self):
         # Model P,A,D values to moods
-        self.extents = {
-        "exuberant" : (1.,1.,1.),
-        "dependant" : (1.,1.,-1),
-        "relaxed"   : (1.,-1.,1.),
-        "docile"    : (1.,-1.,-1.),
-        "bored"     : (-1.,-1.,-1.),
-        "disdainful": (-1.,-1.,1.),
-        "anxious"   : (-1.,1.,-1.),
-        "hostile"   : (-1.,1.,1.)
+        self.emotions = {
+        "exuberant" : np.array((1.,1.,1.)),
+        "dependant" : np.array((1.,1.,-1)),
+        "relaxed"   : np.array((1.,-1.,1.)),
+        "docile"    : np.array((1.,-1.,-1.)),
+        "bored"     : np.array((-1.,-1.,-1.)),
+        "disdainful": np.array((-1.,-1.,1.)),
+        "anxious"   : np.array((-1.,1.,-1.)),
+        "hostile"   : np.array((-1.,1.,1.)),
         }
-
-class OCCMap:
-    """ Mapping the Ortony, Clore and Collins Model to the PAD Model """
-    def __init__(self):
-        """Map Experiences according to 
-        desirability
-        actions
-        consequences
-        expectations
-        affects
-        familiarity
-        favour
-        """
-        feelings = None
 
         self.mappings = [
             "hope",
@@ -51,20 +40,49 @@ class OCCMap:
             "gratitude"
         ]
 
-    def map(self):
-        """ Map OCC to PAD """
+    def __contains__(self, emotion):
+        if emotion in self.emotions:
+            return True
+        return False
+
+    def __getitem__(self, emotion):
+        if emotion in self.emotions:
+            return self.emotions[emotion]
+        raise KeyError("Unknown Emotion ({}) specified.".format(emotion))
+
+    def getValence(self, emotion):
+        if emotion in self.emotions:
+            return self.emotions[emotion][0]
+        raise KeyError("Unknown Emotion ({}) specified.".format(emotion))
+
+    def getArousal(self, emotion):
+        if emotion in self.emotions:
+            return self.emotions[emotion][1]
+        raise KeyError("Unknown Emotion ({}) specified.".format(emotion))
+
+    def getDominance(self, emotion):
+        if emotion in self.emotions:
+            return self.emotions[emotion][2]
+        raise KeyError("Unknown Emotion ({}) specified.".format(emotion))
+
+class OCCMap:
+    """ Mapping the Ortony, Clore and Collins Model to the PAD Model """
+    def __init__(self):
+        """ Map Experiences to reflected emotions """
         pass
 
-    def how_do_I_feel_about(self, source=None, target=None, action=None, consequence=None):
+    def how_do_I_feel_about(self, item):
         """ How do I feel about things. People, Actions, Consequences """
         # Return -1 <= x <= 1
-        return 1
+        return None
 
     def what_I_think_is_going_to_happen(self, action, source, target):
 
         return None
 
-    def experience(self, **kwargs):
+    def experience(self, intent, location, experience):
+        # exp = a dictionary of stat deltas
+
         # source - a valence on how we feel about the causer
         # target - a valence on how we feel about the target
         # action - a valence on the action maybe - otherwise it is irrelevant except to predict consequence.
@@ -207,58 +225,34 @@ disgust is disliking an unfamiliar aspect (of an object)
         
 
 # Map of Action keywords to their related extent (this will vary to degrees of course)
-actionLibrary = {
-    # Exchange
-    "offer" : "relaxed",
-    "impose" : "disdainful",
-    "steal" : "hostile",
-    "gift" : "dependant",
-    "compliment" : "docile",
-    "attack" : "hostile",
-    "defend" : "hostile",
-    "eat" : "exuberant"
-}
+# Defaults
+defaultWorldView = []
+defaultWorldViewMap = {}
+
+with open("worldView.csv", "r") as f:
+    reader = csv.reader(f)
+    headers = next(reader, None)
+    index = 0
+    for c,t,p,a,d in reader:
+        defaultWorldView.append((int(round((float(p)/2.0+0.5)*255)), int(round((float(a)/2.0+0.5)*255)), int(round((float(d)/2.0+0.5)*255))))
+        defaultWorldViewMap[index] = (c,t)
+        defaultWorldViewMap[c] = index
+        defaultWorldViewMap[t] = (defaultWorldViewMap[t] if t in defaultWorldViewMap else []) + [index]
+
+defaultWorldView = np.array(defaultWorldView, dtype=np.uint8)
 
 class Personality:
-    def __init__(self, currentState=(0,0,0)):
+    def __init__(self, currentState=(0,0,0), **kwargs):
         self.mood = currentState # Default to neutral
-        self.worldView = {} # Dictionary of Valency's on all sorts of topics, people and things.
+        self.worldView = kwargs.get("worldView", defaultWorldView)
+        self.individualView = np.zeros((100,3))
+        self.individualMap = {}
+        self.worldViewMap = kwargs.get("worldViewMap", defaultWorldViewMap)
 
-        # Action Planning - not exactly emotions, but emotions are influenced by the following.
-        self.needs = {} # What does this personally actually need regardless of what they think they need
-        self.goals = {} # List of personal goals based on desires, which may or maynot satisfy needs.
-        self.plans = [] # List of plans aimed to satisfy goals.
-
-        # Set goals based on Heirarchy of needs?
-        # Physiology - Food/Water/Breathing etc. (May not be relevent unless we want to make a survival game)
-        self.hunger = 0
-        self.stamina = 100
-        
-        # Safety - Security of body, family, health, resources
-        self.health = 100
-
-        # Love/Belonging - Friendship/Family/Intimacy
-        self.belonging = 0 # How many people call me friend. Do I call anyone a lover
-        self.friends = []
-        self.lover = None
-        self.rivals = []
-        # Talking with someone increases friendliness, unless that person is a rival love interest (relative friendliness to our prospective mate)
-
-
-        # Esteem - Confidence, Achievement, respect of and by others.
-
-        # Self-Actualisation: Morality, Creativity, Spontaneity, problem solving, lack of prejudice acceptance of facts (How to model this!?)
-
-
-    def addNeed(self, need, valence):
-        self.needs[need] = valence
-
-    def addGoal(self, desire, valence):
-        self.goals[desire] = valence
-
-    
-
+        # Check everything is in order.
+        assert isinstance(self.worldView, np.ndarray), "Expected numpy.ndarray got {} instead".format(type(self.worldView))
+        assert isinstance(self.individualView, np.ndarray), "Expected numpy.ndarray got {} instead".format(type(self.individualView))
 
 if __name__=="__main__":
     # Run Testing
-    pass
+    ptest = Personality()
