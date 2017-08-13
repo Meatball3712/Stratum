@@ -1,0 +1,11 @@
+type: interaction
+name: praise
+desc: {0} praises {1}
+locations:
+sourceItemDelta:
+targetItemDelta:
+sourceNeedsDelta: friends|1
+targetNeedsDelta: friends|1
+sourceFeelingsDelta: respect|5
+targetFeelingsDelta: respect|5
+locationChange: 0

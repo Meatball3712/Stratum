@@ -1,0 +1,11 @@
+type: interaction
+name: hug
+desc: {0} hugs {1}
+locations:
+sourceItemDelta:
+targetItemDelta:
+sourceNeedsDelta: friends|10
+targetNeedsDelta: friends|10
+sourceFeelingsDelta: love|5
+targetFeelingsDelta: love|5
+locationChange: 0

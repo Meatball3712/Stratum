@@ -59,21 +59,6 @@ class NPC:
 
         # Self-Actualisation: Morality, Creativity, Spontaneity, problem solving, lack of prejudice acceptance of facts (How to model this!?)
         self.dances = 0 # How many dances have we had. We can only dance when all other criteria are satisfied. A measure of fulfillment
-
-        self.actions = {
-            "sleep" : self.sleep,
-            "attack" : self.attack,
-            "run" : self.run,
-            "eat" : self.eat,
-            "travel" : self.travel,
-            "talk" : self.talk,
-            "hug" : self.hug,
-            "praise" : self.praise,
-            "rebuke" : self.rebuke,
-            "give" : self.give,
-            "dance" : self.dance
-        }
-
         self.experience = {} # A dictionary of experiences
         # (source, action, target, location) = {}change in stats}
     
@@ -107,44 +92,21 @@ class NPC:
         result.append(("self_actualization", (100.0-self.dances) * MaslowHierarchy["self_actualization"]))
         # Higher the value, higher the need
         return sorted([x for x in result if x[1] > 0], key=lambda x: x[1], reverse=True)
-
-    def travel(self, direction):
-        #TODO: change this whole thing to use the travel attached to the location
-        return Intention(self, "travel", direction, self.name + " travels " + direction)
-
-    def attack(self, target):
-        return Intention(self, "attack", target, self.name + " attacks " + target.name)
-
-    def eat(self):
-        return Intention(self, "eat", description=self.name + " eats some food")
-
-    def run(self):
-        return Intention(self, "run", description=self.name + " runs away")
-
-    def sleep(self):
-        return Intention(self, "sleep", description = self.name + " sleeps")
-
-    def talk(self, target):
-        return Intention(self, "talk", target, description=self.name + " talks to " + target.name)
-
-    def hug(self, target):
-        return Intention(self, "hug", target, description=self.name + " hugs " + target.name)
-
-    def give(self, target):
-        return Intention(self, "give", target, description=self.name + " gives a gift to " + target.name)
-
-    def praise(self, target):
-        return Intention(self, "praise", target, description=self.name + " praises " + target.name)
-
-    def rebuke(self, target):
-        return Intention(self, "rebuke", target, description=self.name + " rebukes " + target.name)
-
-    def dance(self):
-        return Intention(self, "dance", description=self.name + " dances")
-
-    def die(self):
-        return Intention(self, "die", description=self.name + " dies")
-
+    
+    def updateItems(self, collection, actor, location):
+        #TODO: real inv management
+        if len(collection) > 0:
+            return False
+        return True
+    
+    def updateFeelings(self, collection, actor, location):
+        #TODO: make feelings affect the NPC
+        pass
+    
+    def updateNeeds(self, collection, actor, location):
+        #TODO: update needs
+        pass
+    
     def updateExperience(self, experiences):
         # Update this NPC's experiences
         for intent, location, experience in experiences:
@@ -160,71 +122,9 @@ class NPC:
                 else:
                     self.experience[event][key] = self.experience[event].get(key, 0)*0.9 + value*0.1
 
-    def step(self, location):
-        # What to do?
-        if self.health <= 0:
-            return self.die()
-
-        # Heal over time, get hungry over time, 
-        self.health += 1 if self.health < 100 and self.hunger > 0 else 0
-        self.hunger -= 1 if self.hunger > 0 else 0
-        self.health -= 1 if self.hunger == 0 else 0
-
-        # Do we have anyone we love
-        candidates = [(c, self.friends[c]) for c in self.friends if self.friends[c] > 50]
-        if len(candidates) > 0:
-            candidates = sorted(candidates, key=lambda candidate: candidate[1], reverse=True)
-            self.love = candidates[0]
-
-
-        # Do things?
-        if self.sleeping > 0 or self.stamina <= 0:
-            return self.sleep()
-
-        # Check and Set Goals Applying Emotional Reasoning.
-        options=location.availableActions(self)
-        needs = self.getNeeds()
+    def step(self, choices, location):
+        return random.choice(choices)
         
-        N = None
-        weight = 0
-        for need in needs:
-            self.logger.debug("{0} craves {1[0]} ({1[1]:.2f})".format(self.name, need))
-            if need[1] > weight/2: # Worth it.
-                weight = need[1]
-            else:
-                self.logger.debug("but {} doesn't know what to do. So in desperation they're going to try something crazy.".format(self.name))
-                # Do Random thing.
-                shrug = random.choice(options)
-                if shrug == "travel":
-                    direction = random.choice(["North", "South", "East", "West"])
-                    return self.travel(direction)
-                elif shrug in ["attack", "talk", "hug", "give", "praise", "rebuke"]:
-                    target = random.choice([x for x in location.actors if x != self])
-                    return self.actions[shrug](target)
-                else:
-                    return self.actions[shrug]()
-
-            # Can we accomplish it here?
-            #  Check if there's an action we think might help.
-            possibleActions = sorted([x for x in list(self.experience.items()) if need == x[0]], key=lambda x: x[1])
-            for event, valence in possibleActions:
-                src, act, target, loc = event
-                if valence > 0 and act in options:
-                    # Lets do this.
-                    if src == target: # This is a self targeting action.
-                        self.actions[act]()
-                    else:
-                        # Is the person here that this worked on here?
-                        if target in location:
-                            return self.actions[act](location.getActor(target))
-                        else:
-                            # Pick Random? - could probably pick a better candidate than that.
-                            target = random.choice([x for x in location.actors if x != self])
-                            return self.actions[act](target)
-        else:
-            # No needs? lets travel a little.
-            direction = random.choice(["North", "South", "East", "West"])
-            return self.travel(direction)
 
         
 class Monster(NPC):
@@ -232,35 +132,23 @@ class Monster(NPC):
     def __init__(self, name="Monster", health=20, strength=10, food=25, **kwargs):
         NPC.__init__(self, name, health=health, strength=strength, food=food, **kwargs)
         self.health = health # If we want to have varying difficulty monsters
-        self.shitList = deque(maxlen=5)
+        self.shitList = []
         self.aggression = 0.25
     
-    def step(self, location):
+    def step(self, choices, location):
         # If someone interacted with it, and they're still around. Attack them.
-        if self.health <= 0:
-            return self.die()
-            
-        self.shitList = deque(sorted(self.shitList, key=lambda e: e[1]))
-        while len(self.shitList) > 0:
-            target = self.shitList.pop()
-            if target in location:
-                break
-        else:
-            target = None
-
-        if target:
-            return Intention(self, "attack", target, self.name + " attacks " + choice.name)
-
-        # Do I want to attack?
-        if len(location.actors) > 1 and random.random() < self.aggression:
-            # Yes, Yes I do. Look... fresh meat.
-            choice = None
-            while not choice or choice == self:
-                choice = random.choice(location.actors)
-            return Intention(self, "attack", choice, self.name + " attacks " + choice.name)
-        else:
-            # Sleep
-            return Intention(self, "sleep", None, self.name + " snoozes")
+        print(choices)
+        for c in choices:
+            if c[0].name == "attack":
+                if c[2] in self.shitList:
+                    return c
+                elif random.random() < self.aggression and c[2] is not self:
+                    self.shitList.append(c[2])
+                    return c
+        #else sleep
+        for c in choices:
+            if c[0].name == "sleep":
+                return c
 
     def updateExperiences(self, experiences):
         for intent, location, experience in experiences:

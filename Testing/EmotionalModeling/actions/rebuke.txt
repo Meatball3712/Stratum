@@ -1,0 +1,11 @@
+type: interaction
+name: rebuke
+desc: {0} rebukes {1}
+locations:
+sourceItemDelta:
+targetItemDelta:
+sourceNeedsDelta: friends|-1
+targetNeedsDelta: friends|-1
+sourceFeelingsDelta: respect|-5
+targetFeelingsDelta: respect|-5
+locationChange: 0

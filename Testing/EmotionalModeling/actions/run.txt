@@ -1,0 +1,11 @@
+type: movement
+name: run
+desc: {0} runs away
+locations:
+sourceItemDelta:
+targetItemDelta:
+sourceNeedsDelta: stamina|-20
+targetNeedsDelta:
+sourceFeelingsDelta:
+targetFeelingsDelta:
+locationChange: 1

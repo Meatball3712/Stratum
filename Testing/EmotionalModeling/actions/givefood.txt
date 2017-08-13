@@ -1,0 +1,11 @@
+type: interaction
+name: givefood
+desc: {0} gives food to {1}
+locations:
+sourceItemDelta: food|-1
+targetItemDelta: food|1
+sourceNeedsDelta: friends|1
+targetNeedsDelta: friends|1
+sourceFeelingsDelta: respect|1
+targetFeelingsDelta: respect|1
+locationChange: 0
