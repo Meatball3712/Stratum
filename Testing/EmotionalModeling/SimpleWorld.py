@@ -203,36 +203,6 @@ class Location:
         for actor in self.actors:
             actor.updateExperience(self.experience)
 
-    def die(self, intent):
-        #TODO: implement dying
-        # Rest in Peace - this is complicated?
-        self.actors.remove(intent.agent)
-        return None
-
-    def dance(self, intent):
-        """
-        Ah we can dance if we want to, we can leave your friends behind 
-        Cause your friends don't dance and if they don't dance 
-        Well they're are no friends of mine 
-        """
-        # You can only dance when other needs are met.
-        if (
-                intent.agent.hunger > 75 and 
-                intent.agent.health == 100 and 
-                intent.agent.stamina > 50 and 
-                intent.agent.food >= 25 and 
-                intent.agent.love != None and 
-                intent.agent.love.target == intent.agent
-        ):
-            self.logger.info(intent)
-            intent.agent.stamina -= 50
-            intent.agent.dance += 10
-            experience = {"self_actualisation":10, "stamina":-50 }
-            return experience
-        else:
-            self.logger.info(intent.agent + " tried to dance but couldn't get into the swing of things")
-            return None
-
 class World:
     
     def __init__(self, locationData, links, actions, logger=None):

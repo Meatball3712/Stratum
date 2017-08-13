@@ -12,7 +12,9 @@ __all__ = [
     "rebuke",
     "run",
     "sleep",
-    "talk"
+    "talk",
+    "dance",
+    "die"
 ]
 
 # actions = "name" : ("module", "class")
@@ -25,7 +27,9 @@ actions = {
     "rebuke" : ("rebuke", "Rebuke"),
     "run" : ("run", "Run"),
     "sleep" : ("sleep", "Sleep"),
-    "talk" : ("talk", "Talk")
+    "talk" : ("talk", "Talk"),
+    "dance" : ("dance", "Dance"),
+    "die" : ("die", "Die"),
 }
 
 def getAction(name):
