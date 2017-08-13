@@ -5,6 +5,7 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 import time
+import actionObjects
 
 def setupDefaultLogging(debug=False):
     # Setup Default Logging
@@ -25,9 +26,11 @@ def setupDefaultLogging(debug=False):
 
     return logger
 
+# DEPRECATED - Moved to Actions Module
+"""
 def loadAction(fname):
     # load line entries
-    print fname
+    print(fname)
     entries = {}
     for l in open(fname,'r').readlines():
         v = l.split(':')
@@ -85,7 +88,7 @@ class Action:
     
     def perform(self, source, target, location):
         print(target)
-        if source.updateItems(self.itemDelta, target, location):
+        if source.updateInventory(self.itemDelta, target, location):
             print(self.name,self.locationChange)
             if self.locationChange:
                 if location.directions[target].isAccessible():
@@ -95,7 +98,7 @@ class Action:
                 else:
                     return "{0} cannot be performed by {1} towards {2}".format(self.name,source.name,target)
             elif target != None:
-                if target.updateItems(self.targetItemDelta, source, location): 
+                if target.updateInventory(self.targetItemDelta, source, location): 
                     #if we have a non-direction target, it's an actor
                     #TODO: check if the target is sleeping
                     source.updateFeelings(self.feelingsDelta, target, location)
@@ -110,6 +113,7 @@ class Action:
                 source.updateNeeds(self.needsDelta, target, location)
             return self.desc.format(source.name, target, location.name)
         return "{0} cannot be performed by {1} due to insufficient inventory".format(self.name,source.name)
+"""
 
 class Location:
     """Location Object"""
@@ -118,6 +122,7 @@ class Location:
         self.directions = {}
         self.actors = []
         #we should change this to test if location is of the right type
+        print(actions)
         self.actions = {a.name:a for a in actions if len(a.locations) == 0 or name in a.locations}
         self.currentActions = []
         self.currentExperiences = []
@@ -143,17 +148,17 @@ class Location:
         for k,a in self.actions.items():
             print(a.name)
             #if we are a move action, append all valid directions
-            if a.type == "movement":
+            if isinstance(a, actionObjects.base.Movement) :
                 for d, l in self.directions.items():
                     print(d)
                     actions.append([a,agent,d,self])
             #if we are an interaction, append all valid actors
-            elif a.type == "interaction":
+            elif isinstance(a, actionObjects.base.Interaction):
                 for t in self.actors:
                     if t is not agent:
                         actions.append([a,agent,t,self])
             #if we are an action (no target), simply append
-            elif a.type == "action":
+            elif isinstance(a, actionObjects.base.Action):
                 actions.append([a,agent,None,self])
         print(actions)
         return actions
@@ -273,6 +278,8 @@ if __name__ == "__main__":
     #NOTE: we could have an ascii coded 2d grid and build larger maps automatically
     logger = setupDefaultLogging()
 
+    from actionObjects import attack
+
     #######
     # P f #
     # V F #
@@ -289,7 +296,7 @@ if __name__ == "__main__":
                      {"src":"farms","dst":"village","dir":"West"},
                      {"src":"plains","dst":"forest","dir":"East"},
                      {"src":"forest","dst":"plains","dir":"West"})
-    actions = [loadAction('actions'+os.sep+f) for f in os.listdir('actions')]
+    actions = actionObjects.loadAllActions()
     w = World(locations, locationLinks, actions, logger=logger)
     w.addActor(NPC("Bob",logger=logger),"village")
     w.addActor(NPC("Alice",logger=logger),"village")
@@ -299,7 +306,7 @@ if __name__ == "__main__":
     
     
     c = 0
-    while c < 5 and len([x for x in w.cast if (not isinstance(x, Monster) and x.health>0)]):
+    while c < 5 and len([x for x in w.cast if (not isinstance(x, Monster) and x.stats["health"]>0)]):
         for i in range(1):
             w.update()
         for actor in w.cast:

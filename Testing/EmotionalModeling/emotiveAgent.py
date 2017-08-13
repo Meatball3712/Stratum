@@ -32,35 +32,23 @@ class NPC:
         self.logger = kwargs.get("logger", None)
         self.logger = (self.logger if self.logger else getDefaultLogger).getChild(self.name)
 
-         # Set goals based on Heirarchy of needs?
-        self.sleeping = 0
-        self.strength = kwargs.get("strength", 20) # How hard we attack
-        self.food = kwargs.get("food", 0)
+        self.stats = {}
+        self.status = {}
+        self.inventory = {}
+
+        self.stats["strength"] = kwargs.get("strength", 20) # How hard we attack
+        self.stats["hunger"] = kwargs.get("hunger", 100) # Hunger: 100 is sated, 0 is starving
+        self.stats["stamina"] = kwargs.get("stamina", 100)
+        self.stats["health"] = kwargs.get("health", 100)
+        self.stats["friends"] = {}
+        self.stats["love"] = None
+        self.stats["respectedBy"] = {}
+        self.stats["dances"] = 0 # How many dances have we had. We can only dance when all other criteria are satisfied. A measure of fulfillment
         
-        # Physiology - Food/Water/Breathing etc. (May not be relevent unless we want to make a survival game)
-        self.hunger = kwargs.get("hunger", 100) # Hunger: 100 is sated, 0 is starving
-        self.stamina = kwargs.get("stamina", 100)
+        self.status["sleeping"] = 0
+        self.inventory["food"] = kwargs.get("food", 0)
 
-        # Safety - Security of body, family, health, resources
-        self.health = kwargs.get("health", 100)
-
-        # Love/Belonging - Friendship/Family/Intimacy
-        self.belonging = 0 # How many people call me friend. Do I love anyone
-        self.friends = {}
-        self.love = None
-        self.rivals = {}
-        # Talking with someone increases friendliness, as does recieving praise
-        # unless that person is a rival love interest (relative friendliness to our prospective mate)
-
-        # Esteem - Confidence, Achievement, respect of and by others.
-        # Earned by offering and recieving praise, deminished by rebukes
-        self.respectedBy = {}
-        self.respectForOthers = {}
-
-        # Self-Actualisation: Morality, Creativity, Spontaneity, problem solving, lack of prejudice acceptance of facts (How to model this!?)
-        self.dances = 0 # How many dances have we had. We can only dance when all other criteria are satisfied. A measure of fulfillment
         self.experience = {} # A dictionary of experiences
-        # (source, action, target, location) = {}change in stats}
     
     def __str__(self):
         return self.name
@@ -69,41 +57,48 @@ class NPC:
         # give us the stats rundown.
         return """{self.name}
 ------------------
-   Health: {self.health:>5}
-   Food:   {self.food:>5}
-   Stamina:{self.stamina:>5}
-   Hunger: {self.hunger:>5}
+   Health: {self.stats[health]:>5}
+   Food:   {self.inventory[food]:>5}
+   Stamina:{self.stats[stamina]:>5}
+   Hunger: {self.stats[hunger]:>5}
    Friends:{friends:>5}
    Respect:{respect:>5}
    Love:   {love:>5}
-   Dances: {self.dances:>5}
- """.format(self=self, love=(self.love if self.love else "No one"), friends=sum(list(self.friends.values())), respect=sum(list(self.respectedBy.values())))
+   Dances: {self.stats[dances]:>5}
+ """.format(self=self, love=(self.stats["love"] if self.stats["love"] else "No One"), friends=sum(list(self.stats["friends"].values())), respect=sum(list(self.stats["respectedBy"].values())))
 
     def getNeeds(self):
         # Return our current pressing needs out of 100
         result = []
         result.append(("health", (100 - self.health) * MaslowHierarchy["physiology"]))
-        result.append(("stamina", (100 - self.stamina) * MaslowHierarchy["physiology"]))
-        result.append(("hunger", (100 - self.hunger) * MaslowHierarchy["physiology"]))
-        result.append(("food", (100.0 - self.food) * MaslowHierarchy["security"]))
-        result.append(("friends", (100.0 - sum(list(self.friends.values()))) * MaslowHierarchy["belonging"]))
-        result.append(("love", (100-(100 if self.love and self.love.love == self else 50 if self.love else 0)) * MaslowHierarchy["belonging"]))
-        result.append(("respect", (100.0-sum(list(self.respectedBy.values()))) * MaslowHierarchy["respect"]))
-        result.append(("self_actualization", (100.0-self.dances) * MaslowHierarchy["self_actualization"]))
+        result.append(("stamina", (100 - self.stats["stamina"]) * MaslowHierarchy["physiology"]))
+        result.append(("hunger", (100 - self.stats["hunger"]) * MaslowHierarchy["physiology"]))
+        result.append(("food", (100.0 - self.inventory["food"]) * MaslowHierarchy["security"]))
+        result.append(("friends", (100.0 - sum(list(self.stats["friends"].values()))) * MaslowHierarchy["belonging"]))
+        result.append(("love", (100-(100 if self.stats["love"] and self.stats["love"].love == self else 50 if self.stats["love"] else 0)) * MaslowHierarchy["belonging"]))
+        result.append(("respect", (100.0-sum(list(self.stats["respectedBy"].values()))) * MaslowHierarchy["respect"]))
+        result.append(("self_actualization", (100.0-self.stats["dances"]) * MaslowHierarchy["self_actualization"]))
         # Higher the value, higher the need
         return sorted([x for x in result if x[1] > 0], key=lambda x: x[1], reverse=True)
     
-    def updateItems(self, collection, actor, location):
+    def updateInventory(self, changes, actor, location):
         #TODO: real inv management
-        if len(collection) > 0:
-            return False
+        if len(changes) > 0:
+            for change, amount in changes.items():
+                if (self.inventory.get(change, 0) + amount) < 0:
+                    return False
+
+            # Inventory checks out. Perform adjustments
+            for change, amount in changes.items():
+                self.inventory[change] = self.inventory.get(change, 0) + amount
+
         return True
     
     def updateFeelings(self, collection, actor, location):
         #TODO: make feelings affect the NPC
         pass
     
-    def updateNeeds(self, collection, actor, location):
+    def updateNeeds(self, changes, actor, location):
         #TODO: update needs
         pass
     
