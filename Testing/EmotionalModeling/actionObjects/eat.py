@@ -7,8 +7,9 @@ class Eat(Action):
             name=name, 
             desc="{0} eats some food",
             sourceItemDelta = {"food":-1},
-            sourceNeedsDelta = {"hunger":5}
-            **kwargs)
+            sourceNeedsDelta = {"hunger":5},
+            **kwargs
+        )
 
         
 """
