@@ -1,7 +1,8 @@
 # __init__ for stories testing module
 
 stories = {
-    "triangles" : "Trangles of Interest"
+    "triangles" : "Trangles of Interest",
+    "TheCostofCowardice" : "The Cost of Cowardice",
 }
 
 __all__ = stories.keys()

@@ -5,40 +5,13 @@ import csv
 class PADMap:
     def __init__(self):
         # Model P,A,D values to moods
-        self.emotions = {
-        "exuberant" : np.array((1.,1.,1.)),
-        "dependant" : np.array((1.,1.,-1)),
-        "relaxed"   : np.array((1.,-1.,1.)),
-        "docile"    : np.array((1.,-1.,-1.)),
-        "bored"     : np.array((-1.,-1.,-1.)),
-        "disdainful": np.array((-1.,-1.,1.)),
-        "anxious"   : np.array((-1.,1.,-1.)),
-        "hostile"   : np.array((-1.,1.,1.)),
-        }
-
-        self.mappings = [
-            "hope",
-            "fear",
-            "joy",
-            "distress",
-            "satisfaction",
-            "dissapointment",
-            "relief",
-            "fears-confirmed",
-            "happy-for",
-            "resentment",
-            "gloating",
-            "pity",
-            "approving",
-            "disapproving",
-            "pride",
-            "shame",
-            "admiration",
-            "reproach",
-            "gratification",
-            "remorse",
-            "gratitude"
-        ]
+        self.emotions = {}
+        # Load EmotionalModel
+        with open("PADMappings.csv", "r") as f:
+            reader = csv.reader(f)
+            headers = next(reader,None)
+            for e,p,a,d in reader:
+                self.emotions[e] = np.array((float(p), float(a), float(d)))
 
     def __contains__(self, emotion):
         if emotion in self.emotions:

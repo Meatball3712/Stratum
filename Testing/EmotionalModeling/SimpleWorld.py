@@ -1,3 +1,4 @@
+#!python3
 #SimpleWorld
 #for testing agent interaction models
 from emotiveAgent import NPC, Monster
@@ -197,5 +198,3 @@ if __name__ == "__main__":
         logger.info("End Simulation")
     else:
         logger.error("Uhoh - Everyone's dead.")
-
-
