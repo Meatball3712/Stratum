@@ -27,7 +27,16 @@
             {"type":"stat", "name":"stamina", "value":-5, "probability" : 1},
             {"type":"status", "affects":"target", "name":"pain", "value":0.8, "probability":0.5},
             {"type":"status", "affects":"target", "name":"wound", "value":0.8, "probability":0.5}
-            {"type":"status", "affects":"target", "name":"die", "value":1, "probability":0.1}
+            {"type":"status", "affects":"target", "name":"kill", "value":1, "probability":0.1}
+        ]
+    },
+    {
+        "source" : {"group":"individuals"},
+        "affect" : "kill",
+        "target" : {"group":"friends"},
+        "location" : null,
+        "consequences" : [
+            {"type":"emotion", "name":"grief", "value":0.9, "probability":0.9}
         ]
     }
 ]
