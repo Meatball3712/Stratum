@@ -1,5 +1,5 @@
 import numpy as np
-import csv
+import csv, json
 
 # PAD Model
 class PADMap:
@@ -199,32 +199,100 @@ disgust is disliking an unfamiliar aspect (of an object)
 
 # Map of Action keywords to their related extent (this will vary to degrees of course)
 # Defaults
-defaultWorldView = []
-defaultWorldViewMap = {}
 
-with open("worldView.csv", "r") as f:
-    reader = csv.reader(f)
-    headers = next(reader, None)
-    index = 0
-    for c,t,p,a,d in reader:
-        defaultWorldView.append((int(round((float(p)/2.0+0.5)*255)), int(round((float(a)/2.0+0.5)*255)), int(round((float(d)/2.0+0.5)*255))))
-        defaultWorldViewMap[index] = (c,t)
-        defaultWorldViewMap[c] = index
-        defaultWorldViewMap[t] = (defaultWorldViewMap[t] if t in defaultWorldViewMap else []) + [index]
+class PersonalView:
+    """
+    A Class to hold the view object as well as handle adding new items to this view
+    """
 
-defaultWorldView = np.array(defaultWorldView, dtype=np.uint8)
+    def __init__(self, loadFile="worldView.csv", **kwargs):
+        self.viewIndex = kwargs.get("viewIndex", 0)
+        self.categoryLength = kwargs.get("categoryLength", 0)
+        self.view = kwargs.get("view", np.zeros((100,3), dtype=np.uint8))
+        self.viewMap = kwargs.get("viewMap", {})
+        self.categories = kwargs.get("categories", {})
+        self.categoryIndex = kwargs.get("categoryIndex", 0)
+
+        if loadFile:
+            with open(loadFile, "r") as f:
+                reader = csv.reader(f)
+                headers = next(reader, None)
+                for item,category,P,A,D in reader:
+                    self.addNewConcept(item, category, P, A, D)
+
+    def __contains__(self, item):
+        if item in self.view:
+            return True
+        else:
+            return False
+
+    def addNewConcept(self, item, category, P, A, D):
+        """
+        Add a new item, growing the array as needed
+        """
+        # Make PAD Values go from 0 - 254
+        P = int(round(P*127+127))
+        A = int(round(A*127+127))
+        D = int(round(D*127+127))
+        if item in self.viewMap:
+            # Concept exists, override perception instead
+            self.view[self.viewMap[item]][:] = np.array((self.categories[category], P, A, D))
+            return self.viewMap[item]
+
+        if category not in self.categories:
+            """ Create New Category if it doesn't exist """
+            self.categories[self.categoryIndex] = category
+            self.categories[category] = self.categoryIndex
+            self.categoryIndex += 1
+
+        if self.viewIndex >= self.view.shape[0]:
+            # Add another 100 lines.
+            self.view = np.concatentate(self.view, np.zeros((100,3), dtype=np.uint8))
+        
+        self.view[self.viewIndex,:] = np.array((P, A, D))
+        self.viewIndex += 1
+
+        return self.viewMap[item]
+        
+    def feelings(self, item):
+        """
+        Return feeling on subject and the category this item is in 
+        """
+        if item in self.viewMap:
+            cat, P, A, D = list(self.view[self.viewMap[item],:])
+            P = float(P-127)/127.0
+            A = float(A-127)/127.0
+            D = float(D-127)/127.0
+            return self.categories[cat], P, A, D
+        else:
+            raise KeyError("Unable to retrieve feelings on unknown concept {}".format(item))
+
+class PersonalExperience:
+    def __init__(self, worldView, individualView, loadFile=None, **kwargs):
+        self.worldView = worldView
+        self.individualView = individualView
+        self.experience = kwargs.get("experience", [])
+
+        if loadFile:
+            with open(loadFile, "r") as f:
+                self.experience = json.load(f)
 
 class Personality:
-    def __init__(self, currentState=(0,0,0), **kwargs):
+    def __init__(self, worldView, individualView, currentState=(0,0,0), **kwargs):
         self.mood = currentState # Default to neutral
-        self.worldView = kwargs.get("worldView", defaultWorldView)
-        self.individualView = np.zeros((100,3))
-        self.individualMap = {}
-        self.worldViewMap = kwargs.get("worldViewMap", defaultWorldViewMap)
+        self.worldView = worldView
+        self.individualView = individualView
+        self.empathy = kwargs.get("empathy", 1) # Scale your emotional responses towards others feelings?
 
         # Check everything is in order.
-        assert isinstance(self.worldView, np.ndarray), "Expected numpy.ndarray got {} instead".format(type(self.worldView))
-        assert isinstance(self.individualView, np.ndarray), "Expected numpy.ndarray got {} instead".format(type(self.individualView))
+        assert isinstance(self.worldView, PersonalView), "Expected PersonalView got {} instead".format(type(self.worldView))
+        assert isinstance(self.individualView, PersonalView), "Expected PersonalView got {} instead".format(type(self.individualView))
+
+        self.expectations = {}
+        # Expectations. Attached to a context, a context is a place or time. A set of conditions that while true, mean the expectation is still relevant.
+
+
+
 
 if __name__=="__main__":
     # Run Testing

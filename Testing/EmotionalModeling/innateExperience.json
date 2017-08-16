@@ -1,0 +1,33 @@
+[
+    {
+        "source" : {"group":"individuals"},
+        "affect" : "sleep",
+        "target" : null,
+        "location" : null,
+        "consequences" : [
+            { "type" : "stat", "affects":"source", "name" : "stamina", "value" : 25, "probability" : 1 }
+        ]
+    },
+    {
+        "source" : {"group":"individuals"},
+        "affect" : "eat",
+        "target" : {"item":"food"},
+        "location" : null,
+        "consequences" : [
+            {"type":"stat", "affects":"source", "name":"hunger", "value" : 1, "probability" : 1},
+        ]
+    },
+    {
+        "source" : {"group":"individuals"},
+        "affect" : "attack",
+        "target" : {"group":"individuals"},
+        "location" : null,
+        "consequences" : [
+            {"type":"stat", "name":"health", "value":-20, "probability":0.5},
+            {"type":"stat", "name":"stamina", "value":-5, "probability" : 1},
+            {"type":"status", "affects":"target", "name":"pain", "value":0.8, "probability":0.5},
+            {"type":"status", "affects":"target", "name":"wound", "value":0.8, "probability":0.5}
+            {"type":"status", "affects":"target", "name":"die", "value":1, "probability":0.1}
+        ]
+    }
+]

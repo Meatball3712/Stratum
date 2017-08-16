@@ -1,4 +1,5 @@
 #!python3
+
 #SimpleWorld
 #for testing agent interaction models
 from emotiveAgent import NPC, Monster
@@ -159,8 +160,6 @@ class World:
 if __name__ == "__main__":
     #NOTE: we could have an ascii coded 2d grid and build larger maps automatically
     logger = setupDefaultLogging()
-
-    from actionObjects import attack
 
     #######
     # P f #

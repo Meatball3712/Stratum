@@ -1,8 +1,9 @@
 # Emotive Agent
 # Testing the machine learning capabilities for emotional intelligence.
 
-import random
+import random, csv
 from collections import deque
+from emotiveModel import Personality, PersonalView, PersonalExperience
 
 MaslowHierarchy = {
     "physiology" : 5,
@@ -32,23 +33,43 @@ class NPC:
         self.logger = kwargs.get("logger", None)
         self.logger = (self.logger if self.logger else getDefaultLogger).getChild(self.name)
 
-        self.stats = {}
-        self.status = {}
-        self.inventory = {}
+        # These aren't feelings. They're physical states the evoke feelings based on their condition. Normally a negative feeling of pain as they get low. 
+        # Stats[stat] = (max, threshold, multiplier, feeling, compel)
+        self.stats = {} # Our Physical Stats.
+        self.stats["strength"] = (kwargs.get("strength", 20), 19, 1, "weakened", "collapse"),  # How hard we attack, when diminished causes feeling of weak
+        self.stats["hunger"] = (kwargs.get("hunger", 100), 50, 2, "hungry", "collapse") # Hunger: 100 is sated, 0 is starving, when diminished causes feeling for hungry
+        self.stats["stamina"] = (kwargs.get("stamina", 100), 50, 1, "exhausted", "collapse") # When diminished causes feeling of exhausted
+        self.stats["health"] = (kwargs.get("health", 100), 90, 1.5, "pain", "die")  # When diminished causes feeling of pain
 
-        self.stats["strength"] = kwargs.get("strength", 20) # How hard we attack
-        self.stats["hunger"] = kwargs.get("hunger", 100) # Hunger: 100 is sated, 0 is starving
-        self.stats["stamina"] = kwargs.get("stamina", 100)
-        self.stats["health"] = kwargs.get("health", 100)
-        self.stats["friends"] = {}
-        self.stats["love"] = None
-        self.stats["respectedBy"] = {}
-        self.stats["dances"] = 0 # How many dances have we had. We can only dance when all other criteria are satisfied. A measure of fulfillment
-        
-        self.status["sleeping"] = 0
+        self.status = {} # For status effects that affect our body and mind. E.g. Asleep, Collapsed, Dead. These are game mechanics.
+
+        self.inventory = {}
         self.inventory["food"] = kwargs.get("food", 0)
 
-        self.experience = {} # A dictionary of experiences
+        # Personal Views
+        self.worldView = PersonalView(loadFile="worldView.csv")
+        self.individualView = PersonalView(loadFile=None) # New blank individual view
+        self.personality = Personality(worldView=self.worldView, individualView = self.individualView)
+
+
+        # These aren't stats.
+        self.stats["friends"] = {} # Moved to individualView under personality.
+        self.stats["love"] = None # This is way to simple. 
+        self.stats["respectedBy"] = {}
+        self.stats["dances"] = 0 # How many dances have we had. We can only dance when all other criteria are satisfied. A measure of fulfillment
+
+        self.goals = [] # Current plan is goal[0]
+        # Sleeping etc should be compelled actions caused by the body. As well as desires to counter a state.
+
+        # Initialise Experience Model
+        self.experience = PersonalExperience(self.worldView, self.individualView, loadFile="innateExperience.json")
+
+
+        with open("innateExperience.csv", "r") as f:
+            reader = csv.reader(f)
+            header = next(reader, None)
+            for row in reader:
+                if source not in
     
     def __str__(self):
         return self.name
@@ -57,18 +78,25 @@ class NPC:
         # give us the stats rundown.
         return """{self.name}
 ------------------
-   Health: {self.stats[health]:>5}
+   Health: {health:>5}
    Food:   {self.inventory[food]:>5}
-   Stamina:{self.stats[stamina]:>5}
-   Hunger: {self.stats[hunger]:>5}
+   Stamina:{stamina:>5}
+   Hunger: {hunger:>5}
    Friends:{friends:>5}
    Respect:{respect:>5}
    Love:   {love:>5}
    Dances: {self.stats[dances]:>5}
- """.format(self=self, love=(self.stats["love"] if self.stats["love"] else "No One"), friends=sum(list(self.stats["friends"].values())), respect=sum(list(self.stats["respectedBy"].values())))
+ """.format(
+        self,
+        health=self.stats["health"][0],
+        stamina=self.stats["stamina"][0],
+        love=(self.stats["love"] if self.stats["love"] else "No One"), 
+        friends=sum(list(self.stats["friends"].values())), 
+        respect=sum(list(self.stats["respectedBy"].values())))
 
     def getNeeds(self):
-        # Return our current pressing needs out of 100
+        # Return our current pressing needs out of 100 
+        # Don't like!!! need to get needs based on sum total of our current environmental variables. Also need to identify sources of grievences.
         result = []
         result.append(("health", (100 - self.health) * MaslowHierarchy["physiology"]))
         result.append(("stamina", (100 - self.stats["stamina"]) * MaslowHierarchy["physiology"]))
