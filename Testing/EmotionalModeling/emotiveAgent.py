@@ -3,7 +3,8 @@
 
 import random, csv
 from collections import deque
-from emotiveModel import Personality, PersonalView, PersonalExperience
+from emotionalModel import Personality, PersonalView, PersonalExperience
+import numpy as np
 
 MaslowHierarchy = {
     "physiology" : 5,
@@ -32,6 +33,8 @@ class NPC:
         self.name = name
         self.logger = kwargs.get("logger", None)
         self.logger = (self.logger if self.logger else getDefaultLogger).getChild(self.name)
+        self.world = kwargs.get("world", None)
+        self.race = kwargs.get("race", "Eadrite")
 
         # These aren't feelings. They're physical states the evoke feelings based on their condition. Normally a negative feeling of pain as they get low. 
         # Stats[stat] = (max, threshold, multiplier, feeling, compel)
@@ -62,14 +65,14 @@ class NPC:
         # Sleeping etc should be compelled actions caused by the body. As well as desires to counter a state.
 
         # Initialise Experience Model
-        self.experience = PersonalExperience(self.worldView, self.individualView, loadFile="innateExperience.json")
+        # self.experience = PersonalExperience(self.worldView, self.individualView, loadFile="innateExperience.json")
 
 
-        with open("innateExperience.csv", "r") as f:
-            reader = csv.reader(f)
-            header = next(reader, None)
-            for row in reader:
-                if source not in
+        # with open("innateExperience.csv", "r") as f:
+        #     reader = csv.reader(f)
+        #     header = next(reader, None)
+        #     for row in reader:
+        #         if source not in
     
     def __str__(self):
         return self.name
@@ -82,17 +85,32 @@ class NPC:
    Food:   {self.inventory[food]:>5}
    Stamina:{stamina:>5}
    Hunger: {hunger:>5}
-   Friends:{friends:>5}
-   Respect:{respect:>5}
-   Love:   {love:>5}
-   Dances: {self.stats[dances]:>5}
  """.format(
         self,
         health=self.stats["health"][0],
-        stamina=self.stats["stamina"][0],
-        love=(self.stats["love"] if self.stats["love"] else "No One"), 
-        friends=sum(list(self.stats["friends"].values())), 
-        respect=sum(list(self.stats["respectedBy"].values())))
+        stamina=self.stats["stamina"][0]
+    )
+
+    def getVector(self, introspective=True):
+        """
+        Return a numpy array with every stat in order.
+        """
+        status = np.zeros((6,))
+        # Format:
+        # --------
+
+        if introspective:
+            status[0] = self.personality.mood[0]    # Mood: P
+            status[1] = self.personality.mood[1]    # Mood: A
+            status[2] = self.personality.mood[2]    # Mood: D
+
+            status[4] = self.stat["stamina"]        # Stat: stamina
+            status[5] = self.stat["hunger"]         # Stat: hunger
+
+        status[3] = self.stat["health"]             # Stat: Health
+
+        return status
+        
 
     def getNeeds(self):
         # Return our current pressing needs out of 100 
@@ -183,3 +201,9 @@ class Monster(NPC):
                 else:
                     # You dare disturb me!?
                     self.shitList.append((intent.agent, 1))
+
+class GloomStalker(Monster):
+    pass
+
+class Eadrite(NPC):
+    pass

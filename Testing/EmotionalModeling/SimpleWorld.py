@@ -118,10 +118,11 @@ class Location:
 
 class World:
     
-    def __init__(self, locationData, links, actions, logger=None):
+    def __init__(self, locationData, links, actions, logger=None, **kwargs):
         #This takes a list of locationnames and descriptions 
         #and a list of {src, dir, dst} triplets which
         #indicate directions through the locations
+        self.races = kwargs.get("races", {})
         self.actions = actions
         self.logger = logger if logger else setupDefaultLogger()
         self.locations = {}
@@ -177,11 +178,16 @@ if __name__ == "__main__":
                      {"src":"farms","dst":"village","dir":"West"},
                      {"src":"plains","dst":"forest","dir":"East"},
                      {"src":"forest","dst":"plains","dir":"West"})
+    races = { 
+        "Eadrite": 0,
+        "Gloom Stalker" : 1
+    }
+
     actions = actionObjects.loadAllActions()
     w = World(locations, locationLinks, actions, logger=logger)
-    w.addActor(NPC("Bob",logger=logger),"village")
-    w.addActor(NPC("Alice",logger=logger),"village")
-    w.addActor(NPC("Jim",logger=logger),"village")
+    w.addActor(NPC("Bob",logger=logger, world=w),"village")
+    w.addActor(NPC("Alice",logger=logger, world=w),"village")
+    w.addActor(NPC("Jim",logger=logger, world=w),"village")
     w.addActor(Monster("The Dread Seeker",logger=logger),"forest")
     
     

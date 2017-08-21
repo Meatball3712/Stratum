@@ -46,3 +46,17 @@ def loadAllActions():
     for action in __all__:
         result.append(getAction(action)())
     return result
+
+class Intention:
+    """ Intention Declaration """
+    def __init__(self, agent, action, target=None, description=""):
+        self.agent = agent
+        self.action = action
+        self.target = target if target else agent
+        self.description = description
+
+    def __str__(self):
+        return self.description
+
+    def __repr__(self):
+        return "{} -> {} @ {}".format(self.agent, self.action, self.target)

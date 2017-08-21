@@ -278,18 +278,23 @@ class PersonalExperience:
                 self.experience = json.load(f)
 
 class Personality:
-    def __init__(self, worldView, individualView, currentState=(0,0,0), **kwargs):
+    def __init__(self, TDModel, QModel, currentState=(0,0,0), **kwargs):
         self.mood = currentState # Default to neutral
-        self.worldView = worldView
-        self.individualView = individualView
         self.empathy = kwargs.get("empathy", 1) # Scale your emotional responses towards others feelings?
+        self.TDModel = TDModel
+        self.QModel = QModel
+        #self.anticipations = [] # Need someway of holding previous anticipations in case they come true?
 
-        # Check everything is in order.
-        assert isinstance(self.worldView, PersonalView), "Expected PersonalView got {} instead".format(type(self.worldView))
-        assert isinstance(self.individualView, PersonalView), "Expected PersonalView got {} instead".format(type(self.individualView))
+    def anticipate(self, vector):
+        # Apply Input Vector to TD Model to anticipate future outcomes.
+        pass
+        # Then pass into OCC/PAD
 
-        self.expectations = {}
-        # Expectations. Attached to a context, a context is a place or time. A set of conditions that while true, mean the expectation is still relevant.
+    def react(self, vector):
+        # React to outcomes that have resulted from anticipated situations
+        pass
+        # Then pass into OCC/PAD plus train QModel and TDModel
+
 
 
 
