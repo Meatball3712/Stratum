@@ -14,7 +14,7 @@ def getRace(name):
     if name not in races:
         raise KeyError("Race Name {} does not exist".format(name))
     else:
-        M, C = actions[name]
+        M, C = races[name]
         _module = importlib.import_module("races."+M, package=None)
         _class = getattr(_module, C)
         return _class

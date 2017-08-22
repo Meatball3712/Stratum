@@ -141,6 +141,8 @@ class World:
     
     def update(self):
         #TODO: insturment this for collecting logs so we can give actors a customised worldview
+
+        # For each character in a location, generate anticipation
         print()
         self.logger.debug("--- Collect Intentions ---")
         for location in self.locations.values():
@@ -166,18 +168,18 @@ if __name__ == "__main__":
     # P f #
     # V F #
     #######
-    locations = ({"name":"village","desc":"a colourful village"},
-                 {"name":"farms","desc":"farmlands near the village"},
-                 {"name":"plains","desc":"open grassy plains"},
-                 {"name":"forest","desc":"dark gloomy forest"})
-    locationLinks = ({"src":"village","dst":"plains","dir":"North"},
-                     {"src":"plains","dst":"village","dir":"South"},
-                     {"src":"farms","dst":"forest","dir":"North"},
-                     {"src":"forest","dst":"farms","dir":"South"},
-                     {"src":"village","dst":"farms","dir":"East"},
-                     {"src":"farms","dst":"village","dir":"West"},
-                     {"src":"plains","dst":"forest","dir":"East"},
-                     {"src":"forest","dst":"plains","dir":"West"})
+    # locations = ({"name":"village","desc":"a colourful village"},
+    #              {"name":"farms","desc":"farmlands near the village"},
+    #              {"name":"plains","desc":"open grassy plains"},
+    #              {"name":"forest","desc":"dark gloomy forest"})
+    # locationLinks = ({"src":"village","dst":"plains","dir":"North"},
+    #                  {"src":"plains","dst":"village","dir":"South"},
+    #                  {"src":"farms","dst":"forest","dir":"North"},
+    #                  {"src":"forest","dst":"farms","dir":"South"},
+    #                  {"src":"village","dst":"farms","dir":"East"},
+    #                  {"src":"farms","dst":"village","dir":"West"},
+    #                  {"src":"plains","dst":"forest","dir":"East"},
+    #                  {"src":"forest","dst":"plains","dir":"West"})
     races = { 
         "Eadrite": 0,
         "Gloom Stalker" : 1

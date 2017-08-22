@@ -1,4 +1,6 @@
 # All the world Biomes
+import sys, os
+sys.path.insert(0, os.path.abspath('..'))
 
 class Biome():
     """Base Biome Class"""
@@ -15,6 +17,15 @@ class Biome():
 
         # Inhabitants
         self.inhabitants = []
+
+    def addLocation(self, direction, place):
+        assert isinstance(place, Biome)
+        if direction not in ("north","south","east","west"):
+            raise KeyError("Invalid Direction {}".format(direction))
+        elif direction == "north": self.north = place
+        elif direction == "south": self.south = place
+        elif direction == "east": self.east = place
+        else: self.west = place
 
 
 class Farm(Biome):
