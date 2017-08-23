@@ -1,15 +1,15 @@
 # Character
 from emotionalModel import Personality
-# from AI import TDModel
-# from AI import QModel
+# from AI import SituationAnalyser
+# from AI import ActionAnalyser
 
 class Character(Personality):
     """ Model of a generic NPC """
     def __init__(self, name, bio="", **kwargs):
         self.name = name
         self.bio = bio
-        self.TDModel = kwargs.get("TDModel", None)
-        self.QModel = kwargs.get("QModel", None)
+        self.SituationAnalyser = kwargs.get("SituationAnalyser", None)
+        self.ActionAnalyser = kwargs.get("ActionAnalyser", None)
 
         self.stats = {}
         self.stats["strength"] = (kwargs.get("strength", 20), 19, 1, "weakened", "collapse"),  # How hard we attack, when diminished causes feeling of weak
@@ -22,7 +22,7 @@ class Character(Personality):
         }
 
         # Additional bits. Empathy? How much we consider otherpeoples consequences
-        Personality.__init__(self, TModel=self.TDModel, QModel=self.QModel, kwargs.get("mood", (0,0,0)), empathy=1.0)
+        Personality.__init__(self, TModel=self.SituationAnalyser, ActionAnalyser=self.ActionAnalyser, kwargs.get("mood", (0,0,0)), empathy=1.0)
 
     def __str__(self):
         return self.name
@@ -66,8 +66,8 @@ class Monster(Personality):
     def __init__(self, name, bio="", **kwargs):
         self.name = name
         self.bio = bio
-        self.TDModel = kwargs.get("TDModel", None)
-        self.QModel = kwargs.get("QModel", None)
+        self.SituationAnalyser = kwargs.get("SituationAnalyser", None)
+        self.ActionAnalyser = kwargs.get("ActionAnalyser", None)
 
         self.stats = {}
         self.stats["strength"] = (kwargs.get("strength", 20), 19, 1, "weakened", "collapse"),  # How hard we attack, when diminished causes feeling of weak
@@ -79,7 +79,7 @@ class Monster(Personality):
             "food" : 25
         }
 
-        Personality.__init__(self, TModel=self.TDModel, QModel=self.QModel, kwargs.get("mood", (-0.5,0.5,0.5)), empathy=0.0) # Start Aggressive
+        Personality.__init__(self, TModel=self.SituationAnalyser, ActionAnalyser=self.ActionAnalyser, kwargs.get("mood", (-0.5,0.5,0.5)), empathy=0.0) # Start Aggressive
 
     def __str__(self):
         return self.name

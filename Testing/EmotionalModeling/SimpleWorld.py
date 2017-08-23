@@ -7,7 +7,7 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 import time
-import actionObjects
+import actions
 
 def setupDefaultLogging(debug=False):
     # Setup Default Logging
@@ -61,17 +61,17 @@ class Location:
         for k,a in self.actions.items():
             print(a.name)
             #if we are a move action, append all valid directions
-            if isinstance(a, actionObjects.base.Movement) :
+            if isinstance(a, actions.base.Movement) :
                 for d, l in self.directions.items():
                     print(d)
                     actions.append([a,agent,d,self])
             #if we are an interaction, append all valid actors
-            elif isinstance(a, actionObjects.base.Interaction):
+            elif isinstance(a, actions.base.Interaction):
                 for t in self.actors:
                     if t is not agent:
                         actions.append([a,agent,t,self])
             #if we are an action (no target), simply append
-            elif isinstance(a, actionObjects.base.Action):
+            elif isinstance(a, actions.base.Action):
                 actions.append([a,agent,None,self])
         print(actions)
         return actions
@@ -143,10 +143,9 @@ class World:
         #TODO: insturment this for collecting logs so we can give actors a customised worldview
 
         # For each character in a location, generate anticipation
-        print()
         self.logger.debug("--- Collect Intentions ---")
         for location in self.locations.values():
-            location.updateActions()
+            location.analyseSituation()
         
         #now all actors have made choices, they can act
         self.logger.debug("--- Execute Intentions ---")
@@ -185,7 +184,7 @@ if __name__ == "__main__":
         "Gloom Stalker" : 1
     }
 
-    actions = actionObjects.loadAllActions()
+    actions = actions.loadAllActions()
     w = World(locations, locationLinks, actions, logger=logger)
     w.addActor(NPC("Bob",logger=logger, world=w),"village")
     w.addActor(NPC("Alice",logger=logger, world=w),"village")

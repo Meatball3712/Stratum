@@ -278,11 +278,11 @@ class PersonalExperience:
                 self.experience = json.load(f)
 
 class Personality:
-    def __init__(self, TDModel, QModel, currentState=(0,0,0), **kwargs):
+    def __init__(self, SituationAnalyser, ActionAnalyser, currentState=(0,0,0), **kwargs):
         self.mood = currentState # Default to neutral
         self.empathy = kwargs.get("empathy", 1) # Scale your emotional responses towards others feelings?
-        self.TDModel = TDModel
-        self.QModel = QModel
+        self.SituationAnalyser = SituationAnalyser
+        self.ActionAnalyser = ActionAnalyser
         #self.anticipations = [] # Need someway of holding previous anticipations in case they come true?
 
     def anticipate(self, vector):
@@ -293,7 +293,7 @@ class Personality:
     def react(self, vector):
         # React to outcomes that have resulted from anticipated situations
         pass
-        # Then pass into OCC/PAD plus train QModel and TDModel
+        # Then pass into OCC/PAD plus train ActionAnalyser and SituationAnalyser
 
 
 

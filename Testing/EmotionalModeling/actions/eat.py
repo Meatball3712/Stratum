@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
-from actionObjects.base import Action
+from actions.base import Action
 class Eat(Action):
     def __init__(self, **kwargs):
         super().__init__(
