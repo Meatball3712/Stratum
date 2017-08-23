@@ -1,7 +1,11 @@
 from Stories import stories, openStory
 import argparse
 
-parser = argparse.ArgumentParser(description="ETL Master Program - run all modules sequentially.")
+"""
+Maybe we can use this script to instigate some learning
+"""
+
+parser = argparse.ArgumentParser(description="Story Time - Guided Learning System")
 parser.add_argument('-d', '--debug', dest='debug', action='store_const', const=True, default=False, help= "Perform debug testing instead of actually submitting.")
 parser.add_argument('-s', '--story', dest='story', action='store', default=False, help= "Story Name")
 kwargs = vars(parser.parse_args())

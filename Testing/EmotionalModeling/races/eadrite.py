@@ -5,5 +5,5 @@ from races.base import Character
 
 class Eadrite(Character):
     """Eadrite Class"""
-    def __init__(self, name, bio="", **kwargs):
-        super().__init__(name, bio, **kwargs)
+    def __init__(self, name, SA, AA, **kwargs):
+        super().__init__(name, SA, AA, **kwargs)

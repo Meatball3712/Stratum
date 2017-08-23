@@ -22,9 +22,9 @@ class ActionEvent:
         av = action.getVector()
         tv = None
         if target is None:
-            tv = np.hstack(cv*0., character.getOpinionVector(character)*0.])
+            tv = np.hstack(cv*0., character.getOpinionVector(character)*0.)
         else:
-            tv = np.hstack(target.getVector(), character.getOpinionVector(target)])
+            tv = np.hstack(target.getVector(), character.getOpinionVector(target))
         self.event = np.hstack(cv, av, tv, location.getVector())
 
 class ActionAnalyser:
