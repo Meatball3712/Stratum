@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
-from actionObjects.base import Movement
+from actions.base import Movement
 class Run(Movement):
     def __init__(self, **kwargs):
         super().__init__(

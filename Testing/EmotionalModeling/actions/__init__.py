@@ -37,7 +37,7 @@ def getAction(name):
         raise KeyError("Action Name {} does not exist".format(name))
     else:
         M, C = actions[name]
-        _module = importlib.import_module("actionObjects."+M, package=None)
+        _module = importlib.import_module("actions."+M, package=None)
         _class = getattr(_module, C)
         return _class
 
