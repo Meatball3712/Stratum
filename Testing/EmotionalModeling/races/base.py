@@ -15,6 +15,9 @@ class Personality:
         self.AA = AA
         self.logger = logger.getChild(self.name)
 
+        # More thoughts.. Determination? - the will to override your emotional instincts.
+        self.determination = 1 # Scaling for how determined a character is. How much they can suppress their emotional reponse.
+
         assert isinstance(self.SA, SituationalAnalysis.SituationAnalyser), "Expected SituationAnalyser got {} instead".format(type(self.SA))
         assert isinstance(self.AA, ActionAnalysis.ActionAnalyser), "Expected ActionAnalyser got {} instead".format(type(self.AA))
 
@@ -86,6 +89,21 @@ class Character(Personality):
 
         return status
 
+    def act(self):
+        """
+        What to do?
+
+        Test Emotional Preference (What we "want" to do)
+        VS Determination (What we've set out to do - our current goal)
+        VS Base needs (What we need to do)
+
+        I think these need to compete. Also - how does empathy fit into this.
+        We need to have self-sacrifice.
+        """
+        pass
+
+        
+        
 class Monster(Personality):
     def __init__(self, name, SA, AA, logger, **kwargs):
         self.SA = SA
